@@ -6,7 +6,6 @@ using Plots, Distributions
 #=======================#
 #==  SPECIAL STRUCTS  ==#
 #=======================#
-
 Base.@kwdef struct Stills
     block = [0 0 0 0
              0 1 1 0
@@ -175,7 +174,7 @@ life_gif = function(matrix::Matrix; n::Int = 100, zoom = 0)
     M = copy(matrix)
     anim = @animate for i in 1:n
         #Plotting the current life
-        plot_life(M, zoom = zoom, title = "Game of Life: Year $i")
+        plot_life(M, zoom = zoom, title = "Game of Life: $i")
 
         #Updating the matrix of life
         M = play_life(M)
@@ -213,15 +212,18 @@ B₄ = rand(Bernoulli(0.00), 50, 50)
 B = hcat(vcat(B₁, B₃), vcat(B₂, B₄))
 
 #Special matrices
-C = pad_matrix(Spaceships().glider, 8)
+C = pad_matrix(Spaceships().glider, 16)
 C = repeat(Spaceships().glider, 4, 4)
 
+#Growing seed
+D = pad_matrix(rand(Bernoulli(0.2), 15, 15), 15)
 
 #============#
 #==  GAME  ==#
 #============#
 #Simulating the game of life
-out_gif = life_gif(B, zoom = 20, n = 100)
+out_gif = life_gif(D, zoom = 10, n = 150)
 
 #Creating a gif
-gif(out_gif, "anim_fps15.gif", fps = 6)
+output_file = "./GameOfLife/GoF.gif"
+gif(out_gif, output_file, fps = 14)
