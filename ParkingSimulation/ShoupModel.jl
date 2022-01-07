@@ -131,7 +131,6 @@ and 'Model Parameters'. Note: ParamType = Union{Real, Distribution}.
 function init_params(;p::ParamType         = 1.0,
                       m::ParamType         = 8.0,
                       t::ParamType         = Normal(1,0.5),
-                      c::ParamType         = Normal(0.5,0.08),
                       f::ParamType         = 1.0,
                       n::ParamType         = Binomial(3,0.8),
                       v::ParamType         = Normal(40,5),
@@ -147,7 +146,6 @@ function init_params(;p::ParamType         = 1.0,
     (p isa Distribution || (p isa Number && p >= 0)) || error("Price of parking on the curb (p) must be nonnegative")
     (m isa Distribution || (m isa Number && m >= 0)) || error("Price of parking off-street (m) must be nonnegative")
     (t isa Distribution || (t isa Number && t >= 0)) || error("Parking duration (t) must be nonnegative")
-    (c isa Distribution || (c isa Number && c >= 0)) || error("Time spent searching for curb-side parking (c) must be nonnegative")
     (n isa Distribution || (n isa Number && n >= 1)) || error("Number of people in a vehicle (n) must be greater than or equal to 1")
     (ar isa Distribution || (ar isa Number && ar >= 0)) || error("The rate of new arrivials (ar) must be nonnegative")
     (cpk isa Distribution || (cpk isa Number && cpk >= 0)) || error("The rate of new arrivials (ar) must be nonnegative")
@@ -157,7 +155,7 @@ function init_params(;p::ParamType         = 1.0,
     (init_occup >= 0 && init_occup <= 1) || error("init_occup must be between 0 and 1")
 
     #Create parameter structs
-    pparams = (t=t,c=c,n=n,v=v)
+    pparams = (t=t,n=n,v=v)
     cparams = (p=p,m=m,f=f,ar=ar,cpk=cpk,mint=mint,minc=minc,minv=minv)
     mparams = (model_time=model_time, init_occup=init_occup)
 
