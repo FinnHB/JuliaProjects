@@ -10,4 +10,4 @@ Repository for a simulation of [Conway's Game of Life](https://en.wikipedia.org/
 4. Any dead cell which has exactly three live neighbours becomes a live cell from reproduction
 
 ##### Example:
-![Alt text](GameOfLife/GoF.gif)
+![Alt text](GoF.gif)
