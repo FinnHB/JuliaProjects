@@ -17,6 +17,7 @@ end
 begin
 	using Plots, PlutoUI, Statistics
 	include("ShoupModel.jl")
+	nothing
 end
 
 # ╔═╡ 61bb1740-6fce-11ec-2994-65231965ac77
@@ -191,6 +192,96 @@ html"""
 """
 
 # ╔═╡ f78ceda0-6ffd-11ec-1f0b-2d67cddbb9e7
+md"""
+The arrival rate and other limiting variables need to be specified to ensure convergence. Since the model solves minute-by-minute, an arrival rate of more than 1 arrival per minute is not supported. However, if an arrival rate of more than one vehicle per minute is desired, this can be achieved by increasing the **model_time** and adjusting the other input parameters accordingly to reflect the alteration to the time horizons.
+
+All input parameters into the model are also optional parameters, with each value being assigned a default value and classified in to one of 3 parameter groupings.
+"""
+
+# ╔═╡ 62a8156e-7075-11ec-265e-09c6b23b2dea
+md"""
+**_NOTE:_** The default values represent arbitrary but plausible values.
+"""
+
+# ╔═╡ 1a484e30-707a-11ec-1e47-f99298189685
+md"""
+The model groupings serve no computational purpose, but were included as an aid to organise the parameter inputs in-case of an expansion of the model in future.
+"""
+
+# ╔═╡ 6e7af840-7075-11ec-1350-b73f65455de5
+md"""
+###### Model setup
+
+The parameters are specified by the `init_params()` function, where all input parameters are entered as optional variables. The function returns a a tuple conatining each of the parameter groupings.
+
+`(CharParams, PrefParams, ModelParams)`
+
+Each parameter group is another nested tuple containing the relevant variables (see table above). The parameters are then passed to `init_dataframe()` which initialises a dataframe containing the characteristics of each agent, including the arrival time. In cases where a distribution is passed, the characteristics of the agent are independently sampled from the distrubtion specified. Sample dataframe output below.
+"""
+
+# ╔═╡ a83a8e10-707f-11ec-2574-41c9fd4fc95b
+init_dataframe(init_params()...)[:,1:9] |>
+df -> first(df,5)
+
+# ╔═╡ 62b1e300-7081-11ec-34cc-3d216ea1254e
+init_dataframe(init_params()...)[:,10:end] |>
+df -> first(df,5)
+
+# ╔═╡ a8bea040-7081-11ec-32a4-e900c194ca28
+md"""
+Based on the parameters set, the potential savings from parking on the curb, and the hourly cruising costs are calculated. These values are stored in *psav* and *ccost* respectively and are calculated based on *c* ($c^*$ in the paper). The maximum cruising time and desired cruising duration, in minutes, are given by *mct* and *tmin* respectively. Lastly, *arrt* is the iteration which the agent starts looking for parking which is determined based on the arrival rate parameter, *ar*.
+"""
+
+# ╔═╡ 2b9f58e0-7084-11ec-06c1-f769e4c39136
+html"""
+<table>
+  <tr align="left">
+    <th>Variable</th>
+    <th>Definition</th>
+  </tr>
+  <tr>
+    <td><em>curb_par_current</em></td>
+    <td>Current number of agents parked on the curb</td>
+  </tr>
+  <tr>
+    <td><em>offs_park_current</em></td>
+    <td>Current number of agents parked off-street</td>
+  </tr>
+  <tr>
+    <td><em>cruising_curent</em></td>
+    <td>Current number of vehicles cruising</td>
+  </tr>
+  <tr>
+    <td><em>curb_park_total</em></td>
+    <td>Total number of vehicles parked on the curb</td>
+  </tr>
+  <tr>
+    <td><em>offs_park_total</em></td>
+    <td>Total number of vehicles parked off-street</td>
+  </tr>
+  <tr>
+    <td><em>cruising_total_time</em></td>
+    <td>Total time spent cruising (hours)</td>
+  </tr>
+  <tr>
+    <td><em>curb_revenue</em></td>
+    <td>Revenue for curb-parking provider ($)</td>
+  </tr>
+  <tr>
+    <td><em>offs_revenue</em></td>
+    <td>Revenue for off-street parking provider ($)</td>
+  </tr>
+</table>
+"""
+
+# ╔═╡ c3a26290-7070-11ec-0d31-fd1e738ab6cd
+md"""
+### Example
+
+
+"""
+
+# ╔═╡ afe4fab0-7070-11ec-1028-bd689ab685d7
 
 
 # ╔═╡ 2f7f17c0-514e-11ec-04cf-978158950869
@@ -217,24 +308,135 @@ Limitations and improvements
 """
 
 # ╔═╡ 0b2d1460-5150-11ec-342f-cfd379b234c5
-function create_plot(M, dims; colors=[:red,:blue,:green,:purple,:yellow])
-	#Deriving values
-	averages=[mean(M[:,i,:], dims=2) for i in dims]
-	max_val=maximum([maximum(M[:,i,:]) for i in dims])
-	
-    #Plotting
-	result_plot=plot(ylims=[0,max_val])
-	for (i,dim) in enumerate(dims)
-		result_plot=plot!(M[:,dim,:], linecolor=colors[i], alpha=0.1, legend=false)
-		result_plot=plot!(averages[i], linecolor=colors[i], alpha=1, legend=false, lw=3)
+begin
+	function create_plot(M, dims; colors=[:red,:blue,:green,:purple,:yellow])
+		#Deriving values
+		averages=[mean(M[:,i,:], dims=2) for i in dims]
+		max_val=maximum([maximum(M[:,i,:]) for i in dims])
+
+		#Plotting
+		result_plot=plot(ylims=[0,max_val])
+		for (i,dim) in enumerate(dims)
+			result_plot=plot!(M[:,dim,:], linecolor=colors[i], alpha=0.1, legend=false)
+			result_plot=plot!(averages[i], linecolor=colors[i], alpha=1, legend=false, lw=3)
+		end
+
+		#Returning
+		return result_plot
 	end
-	
-	#Returning
-	return result_plot
+	nothing
 end
 
-# ╔═╡ 405f3b20-5210-11ec-3b08-17762da9ca35
-create_plot(mc_simulation(init_params(p=p, m=m)...,n=n), [6,7])
+# ╔═╡ 6cc5a3f2-7071-11ec-25e7-19525d559590
+begin
+	_defaultt_ = init_params()[:PrefParams][:t]
+	_defaultn_ = init_params()[:PrefParams][:n]
+	_defaultv_ = init_params()[:PrefParams][:v]
+	_defaultp_ = init_params()[:CharParams][:p]
+	_defaultm_ = init_params()[:CharParams][:m]
+	_defaultf_ = init_params()[:CharParams][:f]
+	_defaultar_ = init_params()[:CharParams][:ar]
+	_defaultcpk_ = init_params()[:CharParams][:cpk]
+	_defaultmint_ = init_params()[:CharParams][:mint]
+	_defaultminc_ = init_params()[:CharParams][:minc]
+	_defaultminv_ = init_params()[:CharParams][:minv]
+	_defaultmodeltime_ = init_params()[:ModelParams][:model_time]
+	_defaultinitoccup_ = init_params()[:ModelParams][:init_occup]
+	
+	_smpl_simulation_params_ = init_params(model_time=10)
+	_smpl_simulation_df_ = init_dataframe(_smpl_simulation_params_...)
+	_smpl_simulation_result_ = run_simulation(_smpl_simulation_df_,
+									          _smpl_simulation_params_...)
+	simulationdims = _smpl_simulation_result_[1] |>
+					 x -> values(x) |>
+					 x -> length(x)
+	nothing
+end
+
+# ╔═╡ 7d84f8f0-706f-11ec-1f77-2f0e8d275688
+HTML("""
+<table>
+  <tr align="left">
+    <th>Variable</th>
+    <th>Default Value</th>
+	<th>Parameter Grouping</th>
+  </tr>
+  <tr>
+    <td><em>p</em></td>
+    <td>$_defaultp_</td>
+	<td>Characteristic</td>
+  </tr>
+  <tr>
+    <td><em>m</em></td>
+    <td>$_defaultm_</td>
+	<td>Characteristic</td>
+  </tr>
+  <tr>
+    <td><em>t</em></td>
+    <td>$_defaultt_</td>
+	<td>Preference</td>
+  </tr>
+  <tr>
+    <td><em>f</em></td>
+    <td>$_defaultf_</td>
+	<td>Characteristic</td>
+  </tr>
+  <tr>
+    <td><em>n</em></td>
+    <td>$_defaultn_</td>
+	<td>Preference</td>
+  </tr>
+  <tr>
+    <td><em>v</em></td>
+    <td>$_defaultv_</td>
+	<td>Preference</td>
+  </tr>
+  <tr>
+    <td><em>ar</em></td>
+    <td>$_defaultar_</td>
+	<td>Characteristic</td>
+  </tr>
+  <tr>
+    <td><em>cpk</em></td>
+    <td>Number of available curb-side spaces</td>
+	<td>Characteristic</td>
+  </tr>
+  <tr>
+    <td><em>mint</em></td>
+    <td>$_defaultmint_</td>
+	<td>Characteristic</td>
+  </tr>
+  <tr>
+    <td><em>minc</em></td>
+    <td>$_defaultminc_</td>
+	<td>Characteristic</td>
+  </tr>
+  <tr>
+    <td><em>minv</em></td>
+    <td>$_defaultminv_</td>
+	<td>Characteristic</td>
+  </tr>
+  <tr>
+    <td><em>model_time</em></td>
+    <td>$_defaultmodeltime_</td>
+	<td>Model</td>
+  </tr>
+  <tr>
+    <td><em>init_occup</em></td>
+    <td>$_defaultinitoccup_</td>
+	<td>Model</td>
+  </tr>
+</table>""")
+
+# ╔═╡ 66174330-7083-11ec-3bfa-c5a9f1bbf264
+md"""
+The dataframe and input parameters are then passed to `run_simulation()`, which runs the model over the specified time horizon. The model returns an array with *model_time* rows, populated with a struct of type `ParkState`, where each parkstate contains $simulationdims variables. The struct includes:
+"""
+
+# ╔═╡ ee31fc50-7084-11ec-1cdc-8938be027965
+md"""
+By using the `as_matrix()` function, the simulation output can be converted into a matrix of dimension [*model_time*, $simulationdims]. This matrix version is used when representing the outputs from the monte-carlo simulation.
+"""
 
 # ╔═╡ Cell order:
 # ╟─61bb1740-6fce-11ec-2994-65231965ac77
@@ -247,9 +449,21 @@ create_plot(mc_simulation(init_params(p=p, m=m)...,n=n), [6,7])
 # ╟─53e32e20-6ff9-11ec-07e4-dfc341becda7
 # ╟─adc3f310-6ffa-11ec-3fbc-01cb6365974c
 # ╟─74e2d560-6ffb-11ec-29c4-ad84ddf64ef9
-# ╠═f78ceda0-6ffd-11ec-1f0b-2d67cddbb9e7
+# ╟─f78ceda0-6ffd-11ec-1f0b-2d67cddbb9e7
+# ╟─7d84f8f0-706f-11ec-1f77-2f0e8d275688
+# ╟─62a8156e-7075-11ec-265e-09c6b23b2dea
+# ╟─1a484e30-707a-11ec-1e47-f99298189685
+# ╟─6e7af840-7075-11ec-1350-b73f65455de5
+# ╟─a83a8e10-707f-11ec-2574-41c9fd4fc95b
+# ╟─62b1e300-7081-11ec-34cc-3d216ea1254e
+# ╟─a8bea040-7081-11ec-32a4-e900c194ca28
+# ╟─66174330-7083-11ec-3bfa-c5a9f1bbf264
+# ╟─2b9f58e0-7084-11ec-06c1-f769e4c39136
+# ╟─ee31fc50-7084-11ec-1cdc-8938be027965
+# ╠═c3a26290-7070-11ec-0d31-fd1e738ab6cd
+# ╠═afe4fab0-7070-11ec-1028-bd689ab685d7
 # ╠═2f7f17c0-514e-11ec-04cf-978158950869
 # ╠═1469afe0-6fe4-11ec-1eb5-f19eb0f7eccc
-# ╟─405f3b20-5210-11ec-3b08-17762da9ca35
 # ╟─0b2d1460-5150-11ec-342f-cfd379b234c5
-# ╠═de6bdb00-5032-11ec-1ed0-19a7e77553d0
+# ╟─6cc5a3f2-7071-11ec-25e7-19525d559590
+# ╟─de6bdb00-5032-11ec-1ed0-19a7e77553d0
