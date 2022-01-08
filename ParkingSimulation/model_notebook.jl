@@ -15,7 +15,7 @@ end
 
 # ╔═╡ de6bdb00-5032-11ec-1ed0-19a7e77553d0
 begin
-	using Plots, PlutoUI, Statistics
+	using StatsPlots, PlutoUI, Distributions
 	include("ShoupModel.jl")
 	nothing
 end
@@ -278,27 +278,180 @@ html"""
 md"""
 ### Example
 
+In this example, we'll look at how different pricing policies may impact congestion, and air pollution. For the sake of comparability, we'll be using the figures for the 2020 Honda Civic as a representative city car.
 
 """
 
-# ╔═╡ afe4fab0-7070-11ec-1028-bd689ab685d7
+# ╔═╡ dc687cc0-70a6-11ec-2859-5b2c6a20bc07
+md"""
+###### Running a single simulation
 
+First step is to set the characteristics of the desired vehicle, a 2020 Honda Civic in this case.
+"""
+
+# ╔═╡ 6a238ec0-70a6-11ec-2004-855e94a8c0f0
+begin
+	#Setting vehicle emissions, coasting speed, and fuel efficiency (L/hour coasting)
+	co2_kgkm = 0.11
+	nox_kgkm = 1.49e-4
+	coasting_speed_kmh = 8
+	fuel_lh = 0.093*coasting_speed_kmh
+	nothing
+end
+
+# ╔═╡ 39b88bee-70b5-11ec-1af3-29c7d60b3ee1
+md"""
+Subsequently, the rest of the model parameters can be set. In this case, all the model parameters are called explicitly, however, a parameter does not need to be explicitly set if the default value is desired.
+"""
+
+# ╔═╡ 86f22af0-70b2-11ec-27bd-710a12c8c4a7
+#Setting model parameters
+pparams, cparams, mparams = init_params(p          = 1.0,
+									    m          = 13.25,
+										t          = Normal(1.5,5),
+										f          = fuel_lh,
+										n          = Binomial(2,0.5),
+										v          = Normal(40,5),
+										ar         = Bernoulli(0.5),
+										cpk        = 8,
+										mint       = 0.1,
+										minc       = 0.0,
+										minv       = 10,
+										model_time = 900,
+										init_occup = 0.0);
+										
+
+# ╔═╡ b56b8730-70b4-11ec-05df-efcd34269c56
+md"""
+Once the model parameters have been stored in our parameter variables, we can generate the dataframe and run the simulation.
+"""
+
+# ╔═╡ a21bdfd0-70b5-11ec-0cad-999dc19d82bd
+begin
+	#Setting model parameters
+	model_df = init_dataframe(pparams, cparams, mparams)
+
+	#Running simulation
+	model_results = run_simulation(model_df, pparams, cparams, mparams)
+	nothing
+end
+
+# ╔═╡ 32eceef0-70b6-11ec-0b34-c95060e14569
+md"""
+We can not plot the results with respect to time.
+"""
+
+# ╔═╡ 5e88dfb2-70b6-11ec-296a-f385f059872e
+begin
+	#Denoting time in hours instead of minutes
+	decimal_minute = 1/60
+	endtime_hours = mparams[:model_time]/60				
+	time_hours = collect(decimal_minute:decimal_minute:endtime_hours)
+	
+	#Extracting values from model results
+	current_curbside = [x.curb_park_current for x in model_results]
+	current_offs = [x.offs_park_current for x in model_results]
+	current_cruisers = [x.cruising_current for x in model_results]
+	
+	#Plotting the results
+	plot(lw=2,
+		 legend=:topleft,
+		 title="Model Output: Current State",
+		 xlabel="Hours",
+		 ylabel="Vehicles")
+	plot!(time_hours, current_curbside, lw=2, label="Parked on Curb", linecolor=:blue)
+	plot!(time_hours, current_offs,     lw=2, label="Parked Off-Street",
+		  linecolor=:orange)
+	plot!(time_hours, current_cruisers, lw=2, label="Cruising", linecolor=:green)
+end
+
+# ╔═╡ 56a4d100-70bb-11ec-0601-d7452e0f929f
+md"""The above graphs shows the state which agents are in along the time-horizon which the model solves for. The green line shows the number of vehicles which are currently cruising to look for parking. Similarly, the blue and orange lines represent the number of vehicles which are currently parked either on the curb or off-street respectively.""" 
+
+# ╔═╡ f3bcba70-70bb-11ec-2891-6d6debf7dcfe
+md"""
+###### Running a many simulations
+
+Arguably, running a single simulation is not particularlyn useful, as we are pulling from several distributions, it could be that we are just getting a tail-case event. Running a monte-carlo, we can get a better sense of what range of results one may expect from the model output.
+
+We are going to use the same parameter settings as above, however, we will now also specify the number of times we want to run the simulation. 
+"""
 
 # ╔═╡ 2f7f17c0-514e-11ec-04cf-978158950869
 md"""
-**Model Iterations**:
-$(@bind n Slider(10:500, default=50, show_value=true))
-
-**Curbside Price:**
-$(@bind p Slider(0:0.1:10, default=0, show_value=true))
-
-**Off-Street Price:**
-$(@bind m TextField(default="1.0"))
+**model iterations**:
+$(@bind model_iterations Slider(10:200, default=50, show_value=true))
 """
+
+# ╔═╡ bd48cc2e-70bc-11ec-3bf9-e1aefe67fe4e
+model_results_mc = mc_simulation(pparams, cparams, mparams, n=model_iterations);
+
+# ╔═╡ 30641d00-70bd-11ec-3d18-951f9e15b112
+md"""
+Plotting the results, we get the following:
+"""
+
+# ╔═╡ edb79a62-70bf-11ec-0a29-d9e13a0c4c44
+md"""
+*curb-side transparency*:
+$(@bind curbside_alpha Slider(0:0.05:1, default=0.15, show_value=true))
+
+*off-street transparency*:
+$(@bind offstreet_alpha Slider(0:0.05:1, default=0.15, show_value=true))
+
+*cruising transparency*:
+$(@bind cruising_alpha Slider(0:0.05:1, default=0.15, show_value=true))
+"""
+
+# ╔═╡ 4ea419f0-70bd-11ec-21e5-5dc42d2a4db7
+begin
+	#-- Setting up variables --#
+	#Extracting variables from all simulation runs
+	current_curbside_mc = model_results_mc[:,1,:]
+	current_offs_mc = model_results_mc[:,2,:]
+	current_cruisers_mc = model_results_mc[:,3,:]
+	
+	#Calculating averages variable at each time step
+	current_curbside_mc_avg = mean(current_curbside_mc, dims=2)
+	current_offs_mc_avg = mean(current_offs_mc, dims=2)
+	current_cruisers_mc_avg = mean(current_cruisers_mc, dims=2)
+	
+	#-- Plotting --#
+	#Initialising plot
+	plot(lw=2,
+		 legend=:topleft,
+		 title="Model Output: Current State",
+		 xlabel="Hours",
+		 ylabel="Vehicles")
+	
+	#Plotting all runs
+	plot!(time_hours, current_curbside_mc, label="",
+		  linecolor=:blue, alpha = curbside_alpha)
+	plot!(time_hours, current_offs_mc,     label="",
+		  linecolor=:orange, alpha = offstreet_alpha)
+	plot!(time_hours, current_cruisers_mc, label="",
+		  linecolor=:green, alpha = cruising_alpha)
+	
+	#Plotting model the means
+	plot!(time_hours, current_curbside_mc_avg, lw=2, label="Parked on Curb",
+		  linecolor=:blue)
+	plot!(time_hours, current_offs_mc_avg,     lw=2, label="Parked Off-Street",
+		  linecolor=:orange)
+	plot!(time_hours, current_cruisers_mc_avg, lw=2, label="Cruising",
+		  linecolor=:green)
+end
+
+# ╔═╡ faadd20e-70c0-11ec-3e0d-e96e4593636c
+md"""
+###### Emissions
+"""
+
+# ╔═╡ 906e8680-70a5-11ec-25f3-0d821f4f7a7e
+md""" ### Appendix"""
 
 # ╔═╡ 1469afe0-6fe4-11ec-1eb5-f19eb0f7eccc
 md"""
-Limitations and improvements
+###### Limitations and improvements
 
 1. Hourly prices seldom work additively over longer parking stays.
 2. Agents are currently miopic, they do not make a prior prediction regarding the expected cruising time before arrival.
@@ -306,6 +459,22 @@ Limitations and improvements
 4. Assumes static variables/distributions throughout the modelling period.
 
 """
+
+# ╔═╡ afe4fab0-7070-11ec-1028-bd689ab685d7
+md""" ###### Function for calculating emissions"""
+
+# ╔═╡ 122174e0-70a5-11ec-2b13-ed49d1272b93
+function calculate_emissions(results; emission_co2=0.11, emission_nox=1.49e-4, coast_speed_kmh=8)
+	#Calculate the total amount of time spend coasting
+	hours_coasting = results[end,6,:]/60
+
+	#Calculate emissions
+	emissions_co2 = (hours_coasting*coast_speed_kmh)*emission_co2 #Kg of CO2
+	emissions_nox = (hours_coasting*coast_speed_kmh)*emission_nox #Kg of NOx
+
+	#Return named tuple with results
+	return (co2=emissions_co2, nox=emissions_nox)
+end;
 
 # ╔═╡ 0b2d1460-5150-11ec-342f-cfd379b234c5
 begin
@@ -435,7 +604,14 @@ The dataframe and input parameters are then passed to `run_simulation()`, which 
 
 # ╔═╡ ee31fc50-7084-11ec-1cdc-8938be027965
 md"""
-By using the `as_matrix()` function, the simulation output can be converted into a matrix of dimension [*model_time*, $simulationdims]. This matrix version is used when representing the outputs from the monte-carlo simulation.
+By using the `as_matrix()` function, the simulation output can be converted into a matrix of dimension [*model_time*, $simulationdims]. When in matrix format, the each column will correspond to one of the variables above, where the order of the columns will correspond with the order of the elements in the struct.
+"""
+
+# ╔═╡ b068db70-7096-11ec-0ae0-0d57f4a56a73
+md"""
+###### Monte-carlo
+
+When model inputs are passed as distributions, it is more insightful to run a monte-carlo to get a sence of the distribution of the outcome variables of interest. To support this, `mc_simulation()` runs the simulation $n_{mc}$ times. For the monte-carlo simulation, the default output is a 3D array of size [*model_time*, $simulationdims, $$n_{mc}$$]. Since the dataframe is generated for each model run, the function does not require a dataframe input, only the parameters and the number iterations.
 """
 
 # ╔═╡ Cell order:
@@ -460,10 +636,28 @@ By using the `as_matrix()` function, the simulation output can be converted into
 # ╟─66174330-7083-11ec-3bfa-c5a9f1bbf264
 # ╟─2b9f58e0-7084-11ec-06c1-f769e4c39136
 # ╟─ee31fc50-7084-11ec-1cdc-8938be027965
-# ╠═c3a26290-7070-11ec-0d31-fd1e738ab6cd
-# ╠═afe4fab0-7070-11ec-1028-bd689ab685d7
-# ╠═2f7f17c0-514e-11ec-04cf-978158950869
-# ╠═1469afe0-6fe4-11ec-1eb5-f19eb0f7eccc
+# ╟─b068db70-7096-11ec-0ae0-0d57f4a56a73
+# ╟─c3a26290-7070-11ec-0d31-fd1e738ab6cd
+# ╟─dc687cc0-70a6-11ec-2859-5b2c6a20bc07
+# ╠═6a238ec0-70a6-11ec-2004-855e94a8c0f0
+# ╟─39b88bee-70b5-11ec-1af3-29c7d60b3ee1
+# ╠═86f22af0-70b2-11ec-27bd-710a12c8c4a7
+# ╟─b56b8730-70b4-11ec-05df-efcd34269c56
+# ╠═a21bdfd0-70b5-11ec-0cad-999dc19d82bd
+# ╟─32eceef0-70b6-11ec-0b34-c95060e14569
+# ╟─5e88dfb2-70b6-11ec-296a-f385f059872e
+# ╟─56a4d100-70bb-11ec-0601-d7452e0f929f
+# ╟─f3bcba70-70bb-11ec-2891-6d6debf7dcfe
+# ╟─2f7f17c0-514e-11ec-04cf-978158950869
+# ╠═bd48cc2e-70bc-11ec-3bf9-e1aefe67fe4e
+# ╟─30641d00-70bd-11ec-3d18-951f9e15b112
+# ╟─4ea419f0-70bd-11ec-21e5-5dc42d2a4db7
+# ╟─edb79a62-70bf-11ec-0a29-d9e13a0c4c44
+# ╠═faadd20e-70c0-11ec-3e0d-e96e4593636c
+# ╟─906e8680-70a5-11ec-25f3-0d821f4f7a7e
+# ╟─1469afe0-6fe4-11ec-1eb5-f19eb0f7eccc
+# ╟─afe4fab0-7070-11ec-1028-bd689ab685d7
+# ╠═122174e0-70a5-11ec-2b13-ed49d1272b93
 # ╟─0b2d1460-5150-11ec-342f-cfd379b234c5
 # ╟─6cc5a3f2-7071-11ec-25e7-19525d559590
 # ╟─de6bdb00-5032-11ec-1ed0-19a7e77553d0
