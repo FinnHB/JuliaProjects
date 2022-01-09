@@ -15,7 +15,7 @@ end
 
 # ╔═╡ de6bdb00-5032-11ec-1ed0-19a7e77553d0
 begin
-	using StatsPlots, PlutoUI, Distributions
+	using StatsPlots, PlutoUI, Distributions, DataFrames, Pkg
 	include("ShoupModel.jl")
 	nothing
 end
@@ -444,6 +444,33 @@ end
 # ╔═╡ faadd20e-70c0-11ec-3e0d-e96e4593636c
 md"""
 ###### Emissions
+
+Using the vehicle emission data specified earlier ($co2_kgkm kg CO$$_2$$/km and $nox_kgkm kg NO$$_x$$/km) and assuming an average cruising speed of $coasting_speed_kmh km/h, we can easily derive the emissions generated from coasting.
+"""
+
+# ╔═╡ 510717c0-70df-11ec-37f6-1b66d47a5beb
+md"""
+The variance in the emission distribution is determined by variances in cruising time. On the left the CO$_2$ emissions in kg, and on the right are the NO$_x$ emissions in g.
+"""
+
+# ╔═╡ 52a5e8c0-70e1-11ec-28c5-6bc2b73f86ee
+md"""
+###### Cruising time
+
+- Total distance cruised
+- Total time spent cruising
+- What does this equate to in terms of distance frmo LA to NY
+- Disclaimer that an infinite street is assumed. 
+"""
+
+# ╔═╡ 8eaeac40-70e0-11ec-03c1-d11c30659461
+md"""
+### Conclusion
+
+- Summary of the paper
+- Overview of the results from the model
+- Potential improvements
+- Limitaitons
 """
 
 # ╔═╡ 906e8680-70a5-11ec-25f3-0d821f4f7a7e
@@ -454,9 +481,9 @@ md"""
 ###### Limitations and improvements
 
 1. Hourly prices seldom work additively over longer parking stays.
-2. Agents are currently miopic, they do not make a prior prediction regarding the expected cruising time before arrival.
-3. Street is assumed to be limitless
-4. Assumes static variables/distributions throughout the modelling period.
+2. Agents are currently miopic and do not have a prior expectation of how long it will take to find parking.
+3. Street is assumed to be limitless and can host an infinite amount of cruisers
+4. Assumes static variables/distributions throughout the modelling period. i.e. doesn't account for rush-hour etc.
 
 """
 
@@ -475,6 +502,46 @@ function calculate_emissions(results; emission_co2=0.11, emission_nox=1.49e-4, c
 	#Return named tuple with results
 	return (co2=emissions_co2, nox=emissions_nox)
 end;
+
+# ╔═╡ 2f22fa60-70d1-11ec-149f-0f16c3bb99e0
+begin
+	#Creating the dataframe
+	emissions = calculate_emissions(model_results_mc;
+									emission_co2=co2_kgkm,
+									emission_nox=nox_kgkm) |>
+				DataFrame
+	
+	#Multiplying nox by 1,000 to be easier to compare to CO2 figures
+	emissions[:nox]*=1000   #g/km
+	emissions[:label] = ""
+	nothing
+end
+
+# ╔═╡ 2fa9e830-70d2-11ec-15b1-73a3d2c33b71
+begin
+	#Getting ylimits
+	yaxs_min_vals = [minimum(emissions[k]) for k in [:co2,:nox]] |> minimum
+	yaxs_max_vals = [maximum(emissions[k]) for k in [:co2,:nox]] |> maximum
+	yaxs_vals = [yaxs_min_vals,yaxs_max_vals]
+	
+	#Initialise plot
+	plot(lw=2,
+		 legend=:topleft,
+		 title="Emissions",
+		 ylabel="kg   |   g")
+	
+	
+	#Plotting results
+	@df emissions violin!(string.(:label), :co2, side=:left, lw=0,
+						  label="CO2 (kg)", show_mean = false, ylim=yaxs_vals,
+						  color=Colors.RGBA(0.1, 0, 0.4, 0.9),
+						  legend=:topleft)
+	
+	@df emissions violin!(twinx(), string.(:label), :nox, side=:right, lw=0,
+					      label="NOx (g)", show_mean = false, ylim=yaxs_vals,
+						  color=Colors.RGBA(0.4, 0, 0.1, 0.9),
+						  legend=:topright)
+end
 
 # ╔═╡ 0b2d1460-5150-11ec-342f-cfd379b234c5
 begin
@@ -653,7 +720,12 @@ When model inputs are passed as distributions, it is more insightful to run a mo
 # ╟─30641d00-70bd-11ec-3d18-951f9e15b112
 # ╟─4ea419f0-70bd-11ec-21e5-5dc42d2a4db7
 # ╟─edb79a62-70bf-11ec-0a29-d9e13a0c4c44
-# ╠═faadd20e-70c0-11ec-3e0d-e96e4593636c
+# ╟─faadd20e-70c0-11ec-3e0d-e96e4593636c
+# ╠═2f22fa60-70d1-11ec-149f-0f16c3bb99e0
+# ╟─2fa9e830-70d2-11ec-15b1-73a3d2c33b71
+# ╟─510717c0-70df-11ec-37f6-1b66d47a5beb
+# ╟─52a5e8c0-70e1-11ec-28c5-6bc2b73f86ee
+# ╟─8eaeac40-70e0-11ec-03c1-d11c30659461
 # ╟─906e8680-70a5-11ec-25f3-0d821f4f7a7e
 # ╟─1469afe0-6fe4-11ec-1eb5-f19eb0f7eccc
 # ╟─afe4fab0-7070-11ec-1028-bd689ab685d7
