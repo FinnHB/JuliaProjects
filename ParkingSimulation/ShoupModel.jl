@@ -78,13 +78,13 @@ curb_saving(t,m,p)= t*(m-p)
 Returns the cost of cruising for some given cruising time c and cost parameters
 n,v, and f.
 """
-function cruising_cost(n,v,f,c;n_pref="egalitarian")
+function cruising_cost(n,v,f;n_pref="egalitarian")
     if lowercase(n_pref) == "egalitarian"
-        return c*(f+n*v)
+        return f+n*v
     elseif lowercase(n_pref) == "dictator"
-        return c*(f+v)
+        return f+v
     elseif lowercase(n_pref) == "diarchy"
-        return c*(f+min(n,2)*v)
+        return f+min(n,2)*v
     end
 end
 
@@ -108,7 +108,6 @@ ParamType = Union{Real, Distribution}
     p          -- Price of parking on the curb (dollars per hour)
     m          -- Price of off-street parking (dollars per hour)
     t          -- Parking duration (hours)
-    c          -- Time spent searching for parking at the curb (hours)
     f          -- Fuel cost when cruising (dollars per hour)
     n          -- Number of people in a car (people)
     v          -- Value of time (dollars per hour per person)
@@ -147,6 +146,7 @@ function init_params(;p::ParamType         = 1.0,
     (m isa Distribution || (m isa Number && m >= 0)) || error("Price of parking off-street (m) must be nonnegative")
     (t isa Distribution || (t isa Number && t >= 0)) || error("Parking duration (t) must be nonnegative")
     (n isa Distribution || (n isa Number && n >= 1)) || error("Number of people in a vehicle (n) must be greater than or equal to 1")
+    (v isa Distribution || (v isa Number && v >= 0)) || error("Value of time (v) must be nonnegative")
     (ar isa Distribution || (ar isa Number && ar >= 0)) || error("The rate of new arrivials (ar) must be nonnegative")
     (cpk isa Distribution || (cpk isa Number && cpk >= 0)) || error("The rate of new arrivials (ar) must be nonnegative")
     (mint isa Distribution || (mint isa Number && mint > 0)) || error("Minimum parking duration (mint) must be greater than 0")
@@ -163,7 +163,7 @@ function init_params(;p::ParamType         = 1.0,
     return (PrefParams=pparams, CharParams=cparams, ModelParams=mparams)
 end
 
-
+pparams, cparams, mparams = init_params()
 
 """
 Returns a dataframe of input parameters. The function also calculates additional parameters
@@ -189,14 +189,15 @@ function init_dataframe(pparams::NamedTuple, cparams::NamedTuple, mparams::Named
          df -> float.(df) |>
          df -> rename(df, df_names)
 
+    #!! NEED TO CALCULATE C*!!
+
     #Truncate values at the minimum values
     df.t = [maximum(x) for x in eachrow(df[:,[:t,:mint]])]
-    df.c = [maximum(x) for x in eachrow(df[:,[:t,:minc]])]
-    df.v = [maximum(x) for x in eachrow(df[:,[:t,:minv]])]
+    df.v = [maximum(x) for x in eachrow(df[:,[:v,:minv]])]
 
     #Calculate costs, cruising time, and arrival
     df.psav = curb_saving.(df.t, df.m, df.p)
-    df.ccost = cruising_cost.(df.n, df.v, df.f, df.c)
+    df.ccost = cruising_cost.(df.n, df.v, df.f)
     df.mct = max_cruise_time.(df.psav, df.ccost)
     df.arrt = findall(x->x==1, arrivals)
     df.tmin = df[:,:t]*60

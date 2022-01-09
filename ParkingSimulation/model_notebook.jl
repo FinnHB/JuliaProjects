@@ -25,13 +25,13 @@ md"""
 # Complementary notebook for ShoupModel.jl
 
 ### This File
-The purpose of this notebook is to accompany the ShoupModel.jl file, acting as supportive documentation for using the model. The model is based on the 2006 paper by Donal Shoup [*Cruising for Parking*](https://www.researchgate.net/publication/222745846_Cruising_for_parking)
+The purpose of this notebook is to accompany the ShoupModel.jl file, acting as supportive documentation for using the model. The model is based on the 2006 paper by Donal Shoup, [*Cruising for Parking*](https://www.researchgate.net/publication/222745846_Cruising_for_parking). This notebook is interactive, and I'd urge you to play around with the parameters. Also, any suggestions on further development are more than welcome!
 """
 
 # ╔═╡ ca730b10-6fdf-11ec-1123-6b3d3d75359c
 md"""
 ### The Paper
-In the paper, Shoup(2006) presents a model which seeks to capture how the price-ratio between curb-side/off-street parking, fuel cost, and an individual's value of time impacts the incentive for cruising. The paper concludes that when curb-side parking is underpriced, it creates an incentive for individuals to cruise for parking, resulting in congestion, air pollution. Bringing the price of curb-side parking in-line with the off-street parking price can consequently yield a triple-dividend: reducing search times, reduce congestion, and raise revenue to reduce the deadweight loss of other forms of taxation.
+In the paper, Shoup(2006) presents a model which seeks to capture how the price-ratio between curb-side/off-street parking, fuel cost, and an individual's value of time impacts the incentive for cruising. The paper concludes that when curb-side parking is underpriced, it creates an incentive for individuals to cruise for parking, resulting in congestion and air pollution. Bringing the price of curb-side parking in-line with the off-street parking price can consequently yield a triple-dividend: reducing search times, reduce congestion, and raise revenue to reduce the deadweight loss from other forms taxation.
 """
 
 # ╔═╡ e344a680-6fdf-11ec-3fe7-012d4ac6994a
@@ -53,7 +53,7 @@ The core model, as presented in the paper, has seven variables:
 
 # ╔═╡ 456483b0-6fe2-11ec-35c5-1fcc6cb28f52
 html"""
-From these variables, a set of four relationships are established:
+From these variables, we can define three terms:
 <table>
   <tr align="left">
     <th>Equation</th>
@@ -106,7 +106,7 @@ From the above, one can see that cities can impose several strategies to tackle 
 md"""
 ### Julia Implementation
 
-Based on the simple model outlined above, one can outline a basic agent based model, where agents arrive to a curb-side parking location. If curbside parking is available, they will immediately park on the curb given that $p \leq m$. If no location is available, the agent will cruise for a maximum of time of $c^*$. If the agent has not been able to find a location to park within $c^*$ minutes, it will park off-street. When an available parking spot on the curb opens up, all of the agents which are currently cruising for parking, are equally likely to occupy the available slot.
+Based on the simple model outlined above, one can outline a basic agent based model, where agents arrive to a curb-side parking location. If curbside parking is available, they will immediately park on the curb given that $p \leq m$. If no location is available, the agent will cruise for a maximum of time of $c^*$. If the agent has not been able to find a location to park within $c^*$ minutes, it will park off-street. When an available parking spot on the curb opens up, all of the agents which are currently cruising for parking are equally likely to occupy the available slot.
 """
 
 # ╔═╡ adc3f310-6ffa-11ec-3fbc-01cb6365974c
@@ -216,7 +216,7 @@ The parameters are specified by the `init_params()` function, where all input pa
 
 `(CharParams, PrefParams, ModelParams)`
 
-Each parameter group is another nested tuple containing the relevant variables (see table above). The parameters are then passed to `init_dataframe()` which initialises a dataframe containing the characteristics of each agent, including the arrival time. In cases where a distribution is passed, the characteristics of the agent are independently sampled from the distrubtion specified. Sample dataframe output below.
+Each parameter group is another nested tuple containing the relevant variables (see table above). The parameters are then passed to `init_dataframe()` which initialises a dataframe containing the characteristics of each agent, including the arrival time. In cases where a distribution is passed, the characteristics of the agent are independently sampled from the distribution specified. Sample dataframe output below.
 """
 
 # ╔═╡ a83a8e10-707f-11ec-2574-41c9fd4fc95b
@@ -308,11 +308,11 @@ Subsequently, the rest of the model parameters can be set. In this case, all the
 #Setting model parameters
 pparams, cparams, mparams = init_params(p          = 1.0,
 									    m          = 13.25,
-										t          = Normal(1.5,5),
+										t          = Normal(1.5,0.5),
 										f          = fuel_lh,
 										n          = Binomial(2,0.5),
 										v          = Normal(40,5),
-										ar         = Bernoulli(0.5),
+										ar         = Bernoulli(0.2),
 										cpk        = 8,
 										mint       = 0.1,
 										minc       = 0.0,
@@ -370,7 +370,7 @@ md"""The above graphs shows the state which agents are in along the time-horizon
 
 # ╔═╡ f3bcba70-70bb-11ec-2891-6d6debf7dcfe
 md"""
-###### Running a many simulations
+###### Running many simulations
 
 Arguably, running a single simulation is not particularlyn useful, as we are pulling from several distributions, it could be that we are just getting a tail-case event. Running a monte-carlo, we can get a better sense of what range of results one may expect from the model output.
 
@@ -453,24 +453,23 @@ md"""
 The variance in the emission distribution is determined by variances in cruising time. On the left the CO$_2$ emissions in kg, and on the right are the NO$_x$ emissions in g.
 """
 
-# ╔═╡ 52a5e8c0-70e1-11ec-28c5-6bc2b73f86ee
-md"""
-###### Cruising time
-
-- Total distance cruised
-- Total time spent cruising
-- What does this equate to in terms of distance frmo LA to NY
-- Disclaimer that an infinite street is assumed. 
-"""
-
 # ╔═╡ 8eaeac40-70e0-11ec-03c1-d11c30659461
 md"""
 ### Conclusion
 
-- Summary of the paper
-- Overview of the results from the model
-- Potential improvements
-- Limitaitons
+###### Summary
+Although at first, the concept of cruising for parking may seem somewhat benal, however, if perverse incentives are set up, it can have large implications for local pollution and congestion. Increasing the price of curb-side parking to align with the price of off-street parking removes the incentive for cruising all together. Increasing the cost of curb-side parking will also raise revenue for the parking provider (typically government) which consequently contribute to the triple-dividend effect.
+"""
+
+# ╔═╡ ddcadbf0-71a3-11ec-031d-4978a5670b4c
+html"""
+<h6>Limitations</h6>
+<p>Lastly, I would like to also discuss two main limitations of the current modelling approach. This is by no means ment to be exhaustive, but hopefully brings to light some more questions.</p>
+
+
+<p>First and foremost, hourly prices seldom work additively. Someone may pay \$10 for parking for 1 hour, and \$12 for parking for 3 hours. Generally, the price curves would be increasing but diminishingly. For the sake of the simulation, this would mean that in the current set-up, people who want to park for a long time are over-estimating the potential savings.</p>
+
+<p>Secondly, agents are myopic and will cruise until the cost of parking on the curb plus the cost of cruising equals the cost of parking off-street. However, in reality, agents likely make decisions based on their expected cruising time, rather than the amount of time realised. If they have already circled the block and all the parking spots are full, they may decide to park off-street without searching any further. At this point, I would also like to point out that the model doesn't account for cyclical road patters, such as rush hour, which agents may also factor into their expected cruising time.</p>
 """
 
 # ╔═╡ 906e8680-70a5-11ec-25f3-0d821f4f7a7e
@@ -505,7 +504,7 @@ end;
 
 # ╔═╡ 2f22fa60-70d1-11ec-149f-0f16c3bb99e0
 begin
-	#Creating the dataframe
+	#Creating the dataframe (function found in appendix)
 	emissions = calculate_emissions(model_results_mc;
 									emission_co2=co2_kgkm,
 									emission_nox=nox_kgkm) |>
@@ -542,6 +541,30 @@ begin
 						  color=Colors.RGBA(0.4, 0, 0.1, 0.9),
 						  legend=:topright)
 end
+
+# ╔═╡ aee289b2-717f-11ec-0ef9-0d6c141887a3
+md""" ###### Distance calculations"""
+
+# ╔═╡ f7a996e0-717d-11ec-0356-c95d25d938c6
+begin
+	dist_la2nyc =  4469
+	average_cruising_time = mean(model_results_mc[:,6,end]) |> 
+							round |>
+							Int
+	km_travelled = mean(model_results_mc[:,6,end])*coasting_speed_kmh |>
+				   round |>
+				   Int
+	mc_distance_cruised = round(km_travelled/dist_la2nyc, digits=2)
+	nothing
+end
+
+# ╔═╡ d26b70b0-717d-11ec-3c9e-91ea8f02b2ce
+md"""
+###### Distance cruising
+
+On average, $average_cruising_time hours were spent cruising based on the simulation runs. This equates to the same distance as from Los Angeles to New York $mc_distance_cruised times. Although some liberties are taken by assuming an infinite space for crusing and that agents not updating their expectation.
+
+"""
 
 # ╔═╡ 0b2d1460-5150-11ec-342f-cfd379b234c5
 begin
@@ -724,12 +747,15 @@ When model inputs are passed as distributions, it is more insightful to run a mo
 # ╠═2f22fa60-70d1-11ec-149f-0f16c3bb99e0
 # ╟─2fa9e830-70d2-11ec-15b1-73a3d2c33b71
 # ╟─510717c0-70df-11ec-37f6-1b66d47a5beb
-# ╟─52a5e8c0-70e1-11ec-28c5-6bc2b73f86ee
+# ╟─d26b70b0-717d-11ec-3c9e-91ea8f02b2ce
 # ╟─8eaeac40-70e0-11ec-03c1-d11c30659461
+# ╟─ddcadbf0-71a3-11ec-031d-4978a5670b4c
 # ╟─906e8680-70a5-11ec-25f3-0d821f4f7a7e
 # ╟─1469afe0-6fe4-11ec-1eb5-f19eb0f7eccc
 # ╟─afe4fab0-7070-11ec-1028-bd689ab685d7
 # ╠═122174e0-70a5-11ec-2b13-ed49d1272b93
+# ╟─aee289b2-717f-11ec-0ef9-0d6c141887a3
+# ╠═f7a996e0-717d-11ec-0356-c95d25d938c6
 # ╟─0b2d1460-5150-11ec-342f-cfd379b234c5
 # ╟─6cc5a3f2-7071-11ec-25e7-19525d559590
 # ╟─de6bdb00-5032-11ec-1ed0-19a7e77553d0
