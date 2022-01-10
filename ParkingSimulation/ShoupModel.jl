@@ -163,8 +163,6 @@ function init_params(;p::ParamType         = 1.0,
     return (PrefParams=pparams, CharParams=cparams, ModelParams=mparams)
 end
 
-pparams, cparams, mparams = init_params()
-
 """
 Returns a dataframe of input parameters. The function also calculates additional parameters
 which are added to the dataframe. These variables include include:
