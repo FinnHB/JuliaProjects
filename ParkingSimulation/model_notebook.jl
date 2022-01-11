@@ -15,7 +15,7 @@ end
 
 # ╔═╡ de6bdb00-5032-11ec-1ed0-19a7e77553d0
 begin
-	using StatsPlots, PlutoUI, Distributions, DataFrames, Pkg
+	using StatsPlots, PlutoUI, Distributions, DataFrames, Dates, Logging
 	include("ShoupModel.jl")
 	nothing
 end
@@ -299,6 +299,9 @@ begin
 	nothing
 end
 
+# ╔═╡ 31034860-731c-11ec-1df2-3d0a0fa36f6e
+fuel_lh
+
 # ╔═╡ 39b88bee-70b5-11ec-1af3-29c7d60b3ee1
 md"""
 Subsequently, the rest of the model parameters can be set. In this case, all the model parameters are called explicitly, however, a parameter does not need to be explicitly set if the default value is desired.
@@ -306,18 +309,18 @@ Subsequently, the rest of the model parameters can be set. In this case, all the
 
 # ╔═╡ 86f22af0-70b2-11ec-27bd-710a12c8c4a7
 #Setting model parameters
-pparams, cparams, mparams = init_params(p          = 1.0,
+pparams, cparams, mparams = init_params(p          = 2.0,
 									    m          = 13.25,
 										t          = Normal(1.5,0.5),
 										f          = fuel_lh,
 										n          = Binomial(2,0.5),
-										v          = Normal(40,5),
+										v          = Normal(25,5),
 										ar         = Bernoulli(0.2),
-										cpk        = 8,
+										cpk        = 2,
 										mint       = 0.1,
 										minc       = 0.0,
 										minv       = 10,
-										model_time = 900,
+										model_time = 180,
 										init_occup = 0.0);
 										
 
@@ -401,6 +404,12 @@ $(@bind offstreet_alpha Slider(0:0.05:1, default=0.15, show_value=true))
 
 *cruising transparency*:
 $(@bind cruising_alpha Slider(0:0.05:1, default=0.15, show_value=true))
+
+-----
+**save plot**\
+$(@bind mcplot_fn TextField((50,1); default="./cruising_for_parking.png"))\
+DPI : $(@bind mc_plot_dpi Slider(50:10:300, default=100, show_value=true))\
+Autosave $(@bind mcplot_autosave CheckBox(default=false))
 """
 
 # ╔═╡ 4ea419f0-70bd-11ec-21e5-5dc42d2a4db7
@@ -418,11 +427,12 @@ begin
 	
 	#-- Plotting --#
 	#Initialising plot
-	plot(lw=2,
-		 legend=:topleft,
-		 title="Model Output: Current State",
-		 xlabel="Hours",
-		 ylabel="Vehicles")
+	mc_plot = plot(lw=2,
+		           legend=:topleft,
+				   dpi=mc_plot_dpi,
+		           title="Model Output: Current State",
+		           xlabel="Hours",
+		           ylabel="Vehicles")
 	
 	#Plotting all runs
 	plot!(time_hours, current_curbside_mc, label="",
@@ -440,6 +450,22 @@ begin
 	plot!(time_hours, current_cruisers_mc_avg, lw=2, label="Cruising",
 		  linecolor=:green)
 end
+
+# ╔═╡ 639121d0-7326-11ec-19c7-579408228d0b
+begin
+	if mcplot_autosave
+		savefig(mc_plot, mcplot_fn)
+		mcplot_savetime = Dates.format(now(), "HH:MM") 
+		mcplot_message = "Your plot was last saved at: $mcplot_savetime"
+		println("Your plot was last saved at: $mcplot_savetime")
+		"Your plot was last saved at: $mcplot_savetime"
+	else
+		mcplot_message = "Plots not currently saving, see REPL for save history"
+	end
+end
+
+# ╔═╡ 777b17f0-7326-11ec-05c5-2f36a64a78d8
+md"""-----"""
 
 # ╔═╡ faadd20e-70c0-11ec-3e0d-e96e4593636c
 md"""
@@ -483,7 +509,7 @@ md"""
 2. Agents are currently miopic and do not have a prior expectation of how long it will take to find parking.
 3. Street is assumed to be limitless and can host an infinite amount of cruisers
 4. Assumes static variables/distributions throughout the modelling period. i.e. doesn't account for rush-hour etc.
-
+5. Assumption regarding that the value of time can be multiplied by the number of people in the vehicle is not neccessarily accurate
 """
 
 # ╔═╡ afe4fab0-7070-11ec-1028-bd689ab685d7
@@ -519,27 +545,27 @@ end
 # ╔═╡ 2fa9e830-70d2-11ec-15b1-73a3d2c33b71
 begin
 	#Getting ylimits
-	yaxs_min_vals = [minimum(emissions[k]) for k in [:co2,:nox]] |> minimum
-	yaxs_max_vals = [maximum(emissions[k]) for k in [:co2,:nox]] |> maximum
-	yaxs_vals = [yaxs_min_vals,yaxs_max_vals]
-	
+	yaxs_min_vals = [minimum(emissions[k]) for k in [:co2,:nox]] |> minimum;
+	yaxs_max_vals = [maximum(emissions[k]) for k in [:co2,:nox]] |> maximum;
+	yaxs_vals = [yaxs_min_vals,yaxs_max_vals];
+
 	#Initialise plot
 	plot(lw=2,
 		 legend=:topleft,
 		 title="Emissions",
-		 ylabel="kg   |   g")
-	
-	
+		 ylabel="kg   |   g");
+
+
 	#Plotting results
 	@df emissions violin!(string.(:label), :co2, side=:left, lw=0,
 						  label="CO2 (kg)", show_mean = false, ylim=yaxs_vals,
 						  color=Colors.RGBA(0.1, 0, 0.4, 0.9),
-						  legend=:topleft)
-	
+						  legend=:topleft);
+
 	@df emissions violin!(twinx(), string.(:label), :nox, side=:right, lw=0,
-					      label="NOx (g)", show_mean = false, ylim=yaxs_vals,
+						  label="NOx (g)", show_mean = false, ylim=yaxs_vals,
 						  color=Colors.RGBA(0.4, 0, 0.1, 0.9),
-						  legend=:topright)
+						  legend=:topright);
 end
 
 # ╔═╡ aee289b2-717f-11ec-0ef9-0d6c141887a3
@@ -564,6 +590,20 @@ md"""
 
 On average, $average_cruising_time hours were spent cruising based on the simulation runs. This equates to the same distance as from Los Angeles to New York $mc_distance_cruised times. Although some liberties are taken by assuming an infinite space for crusing and that agents not updating their expectation.
 
+"""
+
+# ╔═╡ 90167da0-7325-11ec-3f50-4d5e38ed5bdd
+md"""
+###### Miscellaneous
+Be aware that warning messages have been supressed from showing up in the REPL for this notebook to enable tracking of when plots were saved.
+"""
+
+# ╔═╡ df258e00-7324-11ec-252e-75d9423c2f07
+Logging.disable_logging(Logging.Warn);
+
+# ╔═╡ c005ea00-7325-11ec-3ba4-73cd1d59b0dc
+md"""
+###### Packages
 """
 
 # ╔═╡ 0b2d1460-5150-11ec-342f-cfd379b234c5
@@ -730,6 +770,7 @@ When model inputs are passed as distributions, it is more insightful to run a mo
 # ╟─c3a26290-7070-11ec-0d31-fd1e738ab6cd
 # ╟─dc687cc0-70a6-11ec-2859-5b2c6a20bc07
 # ╠═6a238ec0-70a6-11ec-2004-855e94a8c0f0
+# ╠═31034860-731c-11ec-1df2-3d0a0fa36f6e
 # ╟─39b88bee-70b5-11ec-1af3-29c7d60b3ee1
 # ╠═86f22af0-70b2-11ec-27bd-710a12c8c4a7
 # ╟─b56b8730-70b4-11ec-05df-efcd34269c56
@@ -743,6 +784,8 @@ When model inputs are passed as distributions, it is more insightful to run a mo
 # ╟─30641d00-70bd-11ec-3d18-951f9e15b112
 # ╟─4ea419f0-70bd-11ec-21e5-5dc42d2a4db7
 # ╟─edb79a62-70bf-11ec-0a29-d9e13a0c4c44
+# ╟─639121d0-7326-11ec-19c7-579408228d0b
+# ╟─777b17f0-7326-11ec-05c5-2f36a64a78d8
 # ╟─faadd20e-70c0-11ec-3e0d-e96e4593636c
 # ╠═2f22fa60-70d1-11ec-149f-0f16c3bb99e0
 # ╟─2fa9e830-70d2-11ec-15b1-73a3d2c33b71
@@ -756,6 +799,9 @@ When model inputs are passed as distributions, it is more insightful to run a mo
 # ╠═122174e0-70a5-11ec-2b13-ed49d1272b93
 # ╟─aee289b2-717f-11ec-0ef9-0d6c141887a3
 # ╠═f7a996e0-717d-11ec-0356-c95d25d938c6
+# ╟─90167da0-7325-11ec-3f50-4d5e38ed5bdd
+# ╠═df258e00-7324-11ec-252e-75d9423c2f07
+# ╟─c005ea00-7325-11ec-3ba4-73cd1d59b0dc
+# ╠═de6bdb00-5032-11ec-1ed0-19a7e77553d0
 # ╟─0b2d1460-5150-11ec-342f-cfd379b234c5
 # ╟─6cc5a3f2-7071-11ec-25e7-19525d559590
-# ╟─de6bdb00-5032-11ec-1ed0-19a7e77553d0
