@@ -192,6 +192,7 @@ function init_dataframe(pparams::NamedTuple, cparams::NamedTuple, mparams::Named
     #Truncate values at the minimum values
     df.t = [maximum(x) for x in eachrow(df[:,[:t,:mint]])]
     df.v = [maximum(x) for x in eachrow(df[:,[:v,:minv]])]
+    df.n = [maximum([x,1]) for x in df.n]
 
     #Calculate costs, cruising time, and arrival
     df.psav = curb_saving.(df.t, df.m, df.p)

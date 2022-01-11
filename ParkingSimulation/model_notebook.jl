@@ -380,7 +380,7 @@ We are going to use the same parameter settings as above, however, we will now a
 # ╔═╡ 2f7f17c0-514e-11ec-04cf-978158950869
 md"""
 **model iterations**:
-$(@bind model_iterations Slider(10:200, default=50, show_value=true))
+$(@bind model_iterations Slider(10:5:100, default=50, show_value=true))
 """
 
 # ╔═╡ bd48cc2e-70bc-11ec-3bf9-e1aefe67fe4e
