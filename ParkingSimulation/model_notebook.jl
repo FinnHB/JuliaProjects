@@ -99,14 +99,14 @@ From the above, one can see that cities can impose several strategies to tackle 
 
 1. If $m=p$, then there will no longer be an incentive to park on the curb. This can either be achieved by increasing the curb-side parking fee, or increase the amount of off-street parking such that $m$ reduces to the same level as $p$.
 2. Fuel taxes or emission permits could increase the cost of fuel and consequently increase the cost of cruising. In effect, this would reduce cruising however, unlikely to eliminate it, as it doesn't tackle the root cause of the issue..
-3. Similarly to increases in increases in fuel cost, policy to promote carpooling, or secondary vehicle taxes may increase $n$ and reduce cruising times.
+3. Similarly to increases in fuel cost, policy to promote carpooling, or secondary vehicle taxes may increase $n$ and reduce cruising times.
 """
 
 # ╔═╡ 53e32e20-6ff9-11ec-07e4-dfc341becda7
 md"""
 ### Julia Implementation
 
-Based on the simple model outlined above, one can outline a basic agent based model, where agents arrive to a curb-side parking location. If curbside parking is available, they will immediately park on the curb given that $p \leq m$. If no location is available, the agent will cruise for a maximum of time of $c^*$. If the agent has not been able to find a location to park within $c^*$ minutes, it will park off-street. When an available parking spot on the curb opens up, all of the agents which are currently cruising for parking are equally likely to occupy the available slot.
+Based on the simple model outlined above, one can outline a basic agent based model, where agents arrive to a curb-side parking location. If curbside parking is available, they will immediately park on the curb given that $p \leq m$. If no location is available, the agent will cruise for a maximum of time of $c^*$. If the agent has not been able to find a location to park within $c^*$ minutes, it will park off-street. When an available parking spot on the curb opens up, all the agents which are currently cruising for parking are equally likely to occupy the available slot.
 """
 
 # ╔═╡ adc3f310-6ffa-11ec-3fbc-01cb6365974c
@@ -212,7 +212,7 @@ The model groupings serve no computational purpose, but were included as an aid 
 md"""
 ###### Model setup
 
-The parameters are specified by the `init_params()` function, where all input parameters are entered as optional variables. The function returns a a tuple conatining each of the parameter groupings.
+The parameters are specified by the `init_params()` function, where all input parameters are entered as optional variables. The function returns a tuple containing each of the parameter groupings.
 
 `(CharParams, PrefParams, ModelParams)`
 
@@ -309,14 +309,14 @@ Subsequently, the rest of the model parameters can be set. In this case, all the
 
 # ╔═╡ 86f22af0-70b2-11ec-27bd-710a12c8c4a7
 #Setting model parameters
-pparams, cparams, mparams = init_params(p          = 2.0,
+pparams, cparams, mparams = init_params(p          = 1.00,
 									    m          = 13.25,
 										t          = Normal(1.5,0.5),
 										f          = fuel_lh,
 										n          = Binomial(2,0.5),
 										v          = Normal(25,5),
 										ar         = Bernoulli(0.2),
-										cpk        = 2,
+										cpk        = 8,
 										mint       = 0.1,
 										minc       = 0.0,
 										minv       = 10,
@@ -341,7 +341,7 @@ end
 
 # ╔═╡ 32eceef0-70b6-11ec-0b34-c95060e14569
 md"""
-We can not plot the results with respect to time.
+We can now plot the results with respect to time.
 """
 
 # ╔═╡ 5e88dfb2-70b6-11ec-296a-f385f059872e
@@ -375,7 +375,7 @@ md"""The above graphs shows the state which agents are in along the time-horizon
 md"""
 ###### Running many simulations
 
-Arguably, running a single simulation is not particularlyn useful, as we are pulling from several distributions, it could be that we are just getting a tail-case event. Running a monte-carlo, we can get a better sense of what range of results one may expect from the model output.
+Arguably, running a single simulation is not particularly useful, as we are pulling from several distributions, it could be that we are just getting a tail-case event. Running a monte-carlo, we can get a better sense of what range of results one may expect from the model output.
 
 We are going to use the same parameter settings as above, however, we will now also specify the number of times we want to run the simulation. 
 """
@@ -383,7 +383,7 @@ We are going to use the same parameter settings as above, however, we will now a
 # ╔═╡ 2f7f17c0-514e-11ec-04cf-978158950869
 md"""
 **model iterations**:
-$(@bind model_iterations Slider(10:5:100, default=50, show_value=true))
+$(@bind model_iterations Slider(10:5:200, default=50, show_value=true))
 """
 
 # ╔═╡ bd48cc2e-70bc-11ec-3bf9-e1aefe67fe4e
@@ -407,62 +407,12 @@ $(@bind cruising_alpha Slider(0:0.05:1, default=0.15, show_value=true))
 
 -----
 **save plot**\
-$(@bind mcplot_fn TextField((50,1); default="./cruising_for_parking.png"))\
+$(@bind mcplot_fn TextField((89,2); default="./cruising_for_parking.png"))\
 DPI : $(@bind mc_plot_dpi Slider(50:10:300, default=100, show_value=true))\
+Plot title $(@bind mcplot_title_check CheckBox(default=true))
+$(@bind mcplot_title_field TextField((30,1); default="Model Output: Current State"))\
 Autosave $(@bind mcplot_autosave CheckBox(default=false))
 """
-
-# ╔═╡ 4ea419f0-70bd-11ec-21e5-5dc42d2a4db7
-begin
-	#-- Setting up variables --#
-	#Extracting variables from all simulation runs
-	current_curbside_mc = model_results_mc[:,1,:]
-	current_offs_mc = model_results_mc[:,2,:]
-	current_cruisers_mc = model_results_mc[:,3,:]
-	
-	#Calculating averages variable at each time step
-	current_curbside_mc_avg = mean(current_curbside_mc, dims=2)
-	current_offs_mc_avg = mean(current_offs_mc, dims=2)
-	current_cruisers_mc_avg = mean(current_cruisers_mc, dims=2)
-	
-	#-- Plotting --#
-	#Initialising plot
-	mc_plot = plot(lw=2,
-		           legend=:topleft,
-				   dpi=mc_plot_dpi,
-		           title="Model Output: Current State",
-		           xlabel="Hours",
-		           ylabel="Vehicles")
-	
-	#Plotting all runs
-	plot!(time_hours, current_curbside_mc, label="",
-		  linecolor=:blue, alpha = curbside_alpha)
-	plot!(time_hours, current_offs_mc,     label="",
-		  linecolor=:orange, alpha = offstreet_alpha)
-	plot!(time_hours, current_cruisers_mc, label="",
-		  linecolor=:green, alpha = cruising_alpha)
-	
-	#Plotting model the means
-	plot!(time_hours, current_curbside_mc_avg, lw=2, label="Parked on Curb",
-		  linecolor=:blue)
-	plot!(time_hours, current_offs_mc_avg,     lw=2, label="Parked Off-Street",
-		  linecolor=:orange)
-	plot!(time_hours, current_cruisers_mc_avg, lw=2, label="Cruising",
-		  linecolor=:green)
-end
-
-# ╔═╡ 639121d0-7326-11ec-19c7-579408228d0b
-begin
-	if mcplot_autosave
-		savefig(mc_plot, mcplot_fn)
-		mcplot_savetime = Dates.format(now(), "HH:MM") 
-		mcplot_message = "Your plot was last saved at: $mcplot_savetime"
-		println("Your plot was last saved at: $mcplot_savetime")
-		"Your plot was last saved at: $mcplot_savetime"
-	else
-		mcplot_message = "Plots not currently saving, see REPL for save history"
-	end
-end
 
 # ╔═╡ 777b17f0-7326-11ec-05c5-2f36a64a78d8
 md"""-----"""
@@ -484,13 +434,13 @@ md"""
 ### Conclusion
 
 ###### Summary
-Although at first, the concept of cruising for parking may seem somewhat benal, however, if perverse incentives are set up, it can have large implications for local pollution and congestion. Increasing the price of curb-side parking to align with the price of off-street parking removes the incentive for cruising all together. Increasing the cost of curb-side parking will also raise revenue for the parking provider (typically government) which consequently contribute to the triple-dividend effect.
+Although at first, the concept of cruising for parking may seem somewhat banal, however, if perverse incentives are set up, it can have large implications for local pollution and congestion. Increasing the price of curb-side parking to align with the price of off-street parking removes the incentive for cruising all together. Increasing the cost of curb-side parking will also raise revenue for the parking provider (typically government) which consequently contribute to the triple-dividend effect.
 """
 
 # ╔═╡ ddcadbf0-71a3-11ec-031d-4978a5670b4c
 html"""
 <h6>Limitations</h6>
-<p>Lastly, I would like to also discuss two main limitations of the current modelling approach. This is by no means ment to be exhaustive, but hopefully brings to light some more questions.</p>
+<p>Lastly, I would like to also discuss two main limitations of the current modelling approach. This is by no means meant to be exhaustive, but hopefully brings to light some more questions.</p>
 
 
 <p>First and foremost, hourly prices seldom work additively. Someone may pay \$10 for parking for 1 hour, and \$12 for parking for 3 hours. Generally, the price curves would be increasing but diminishingly. For the sake of the simulation, this would mean that in the current set-up, people who want to park for a long time are over-estimating the potential savings.</p>
@@ -509,7 +459,7 @@ md"""
 2. Agents are currently miopic and do not have a prior expectation of how long it will take to find parking.
 3. Street is assumed to be limitless and can host an infinite amount of cruisers
 4. Assumes static variables/distributions throughout the modelling period. i.e. doesn't account for rush-hour etc.
-5. Assumption regarding that the value of time can be multiplied by the number of people in the vehicle is not neccessarily accurate
+5. Assumption regarding that the value of time can be multiplied by the number of people in the vehicle is not necessarily accurate
 """
 
 # ╔═╡ afe4fab0-7070-11ec-1028-bd689ab685d7
@@ -518,7 +468,7 @@ md""" ###### Function for calculating emissions"""
 # ╔═╡ 122174e0-70a5-11ec-2b13-ed49d1272b93
 function calculate_emissions(results; emission_co2=0.11, emission_nox=1.49e-4, coast_speed_kmh=8)
 	#Calculate the total amount of time spend coasting
-	hours_coasting = results[end,6,:]/60
+	hours_coasting = results[end,6,:]
 
 	#Calculate emissions
 	emissions_co2 = (hours_coasting*coast_speed_kmh)*emission_co2 #Kg of CO2
@@ -574,10 +524,10 @@ md""" ###### Distance calculations"""
 # ╔═╡ f7a996e0-717d-11ec-0356-c95d25d938c6
 begin
 	dist_la2nyc =  4469
-	average_cruising_time = mean(model_results_mc[:,6,end]) |> 
+	average_cruising_time = mean(model_results_mc[end,6,:]) |> 
 							round |>
 							Int
-	km_travelled = mean(model_results_mc[:,6,end])*coasting_speed_kmh |>
+	km_travelled = mean(model_results_mc[end,6,:])*coasting_speed_kmh |>
 				   round |>
 				   Int
 	mc_distance_cruised = round(km_travelled/dist_la2nyc, digits=2)
@@ -588,18 +538,80 @@ end
 md"""
 ###### Distance cruising
 
-On average, $average_cruising_time hours were spent cruising based on the simulation runs. This equates to the same distance as from Los Angeles to New York $mc_distance_cruised times. Although some liberties are taken by assuming an infinite space for crusing and that agents not updating their expectation.
+On average, $average_cruising_time hours were spent cruising based on the simulation runs. This equates to the same distance as from Los Angeles to New York $mc_distance_cruised times, or $km_travelled km. Although some liberties are taken by assuming an infinite space for cruising and that agents not updating their expectation.
 
 """
 
 # ╔═╡ 90167da0-7325-11ec-3f50-4d5e38ed5bdd
 md"""
 ###### Miscellaneous
-Be aware that warning messages have been supressed from showing up in the REPL for this notebook to enable tracking of when plots were saved.
+Be aware that warning messages have been suppressed from showing up in the REPL for this notebook to enable tracking of when plots were saved.
 """
 
 # ╔═╡ df258e00-7324-11ec-252e-75d9423c2f07
 Logging.disable_logging(Logging.Warn);
+
+# ╔═╡ 4a988750-732f-11ec-33fc-31be90d0bd29
+begin
+	if mcplot_title_check
+		mc_plot_title = mcplot_title_field;
+	else
+		mc_plot_title = "";
+	end
+	nothing
+end
+
+# ╔═╡ 4ea419f0-70bd-11ec-21e5-5dc42d2a4db7
+begin
+	#-- Setting up variables --#
+	#Extracting variables from all simulation runs
+	current_curbside_mc = model_results_mc[:,1,:]
+	current_offs_mc = model_results_mc[:,2,:]
+	current_cruisers_mc = model_results_mc[:,3,:]
+	
+	#Calculating averages variable at each time step
+	current_curbside_mc_avg = mean(current_curbside_mc, dims=2)
+	current_offs_mc_avg = mean(current_offs_mc, dims=2)
+	current_cruisers_mc_avg = mean(current_cruisers_mc, dims=2)
+	
+	#-- Plotting --#
+	#Initialising plot
+	mc_plot = plot(lw=2,
+		           legend=:topleft,
+				   dpi=mc_plot_dpi,
+		           title=mc_plot_title,
+		           xlabel="Hours",
+		           ylabel="Vehicles")
+	
+	#Plotting all runs
+	plot!(time_hours, current_curbside_mc, label="",
+		  linecolor=:blue, alpha = curbside_alpha)
+	plot!(time_hours, current_offs_mc,     label="",
+		  linecolor=:orange, alpha = offstreet_alpha)
+	plot!(time_hours, current_cruisers_mc, label="",
+		  linecolor=:green, alpha = cruising_alpha)
+	
+	#Plotting model the means
+	plot!(time_hours, current_curbside_mc_avg, lw=2, label="Parked on Curb",
+		  linecolor=:blue)
+	plot!(time_hours, current_offs_mc_avg,     lw=2, label="Parked Off-Street",
+		  linecolor=:orange)
+	plot!(time_hours, current_cruisers_mc_avg, lw=2, label="Cruising",
+		  linecolor=:green)
+end
+
+# ╔═╡ 639121d0-7326-11ec-19c7-579408228d0b
+begin
+	if mcplot_autosave
+		savefig(mc_plot, mcplot_fn)
+		mcplot_savetime = Dates.format(now(), "HH:MM") 
+		mcplot_message = "Your plot was last saved at: $mcplot_savetime"
+		println("Your plot was last saved at: $mcplot_savetime")
+		"Your plot was last saved at: $mcplot_savetime"
+	else
+		mcplot_message = "Plots not currently saving, see REPL for save history"
+	end
+end
 
 # ╔═╡ c005ea00-7325-11ec-3ba4-73cd1d59b0dc
 md"""
@@ -734,14 +746,14 @@ The dataframe and input parameters are then passed to `run_simulation()`, which 
 
 # ╔═╡ ee31fc50-7084-11ec-1cdc-8938be027965
 md"""
-By using the `as_matrix()` function, the simulation output can be converted into a matrix of dimension [*model_time*, $simulationdims]. When in matrix format, the each column will correspond to one of the variables above, where the order of the columns will correspond with the order of the elements in the struct.
+By using the `as_matrix()` function, the simulation output can be converted into a matrix of dimension [*model_time*, $simulationdims]. When in matrix format, each column will correspond to one of the variables above, where the order of the columns will correspond with the order of the elements in the struct.
 """
 
 # ╔═╡ b068db70-7096-11ec-0ae0-0d57f4a56a73
 md"""
 ###### Monte-carlo
 
-When model inputs are passed as distributions, it is more insightful to run a monte-carlo to get a sence of the distribution of the outcome variables of interest. To support this, `mc_simulation()` runs the simulation $n_{mc}$ times. For the monte-carlo simulation, the default output is a 3D array of size [*model_time*, $simulationdims, $$n_{mc}$$]. Since the dataframe is generated for each model run, the function does not require a dataframe input, only the parameters and the number iterations.
+When model inputs are passed as distributions, it is more insightful to run a monte-carlo to get a sense of the distribution of the outcome variables of interest. To support this, `mc_simulation()` runs the simulation $n_{mc}$ times. For the monte-carlo simulation, the default output is a 3D array of size [*model_time*, $simulationdims, $$n_{mc}$$]. Since the dataframe is generated for each model run, the function does not require a dataframe input, only the parameters and the number iterations.
 """
 
 # ╔═╡ Cell order:
@@ -801,6 +813,7 @@ When model inputs are passed as distributions, it is more insightful to run a mo
 # ╠═f7a996e0-717d-11ec-0356-c95d25d938c6
 # ╟─90167da0-7325-11ec-3f50-4d5e38ed5bdd
 # ╠═df258e00-7324-11ec-252e-75d9423c2f07
+# ╠═4a988750-732f-11ec-33fc-31be90d0bd29
 # ╟─c005ea00-7325-11ec-3ba4-73cd1d59b0dc
 # ╠═de6bdb00-5032-11ec-1ed0-19a7e77553d0
 # ╟─0b2d1460-5150-11ec-342f-cfd379b234c5
