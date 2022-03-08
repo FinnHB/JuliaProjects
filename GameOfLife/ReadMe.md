@@ -14,4 +14,4 @@ Repository for a simulation of [Conway's Game of Life](https://en.wikipedia.org/
 
 
 ##### Code:
-The [GameOfLife.jl](GameOfLife.jl) file contains a series of functions for specifying the starting matrix, and solving the game of life. Additionally, the code for plotting and storing the results as a GIF are included.
+The [GameOfLife.jl](GameOfLife.jl) file contains a series of functions for specifying the starting matrix, and solving the game of life. Additionally, the code for plotting and storing the results as a GIF are included. To activate the environment, just run `activate .` from the package manager while the present working directory is set to this folder.
