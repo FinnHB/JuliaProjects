@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.7
+# v0.18.1
 
 using Markdown
 using InteractiveUtils
@@ -7,10 +7,17 @@ using InteractiveUtils
 # This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
 macro bind(def, element)
     quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
         local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : missing
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
         el
     end
+end
+
+# ╔═╡ 81458fbe-d6e5-484a-9f9e-d0539c6acd6d
+begin
+	using Pkg
+	Pkg.activate("Project.toml")
 end
 
 # ╔═╡ de6bdb00-5032-11ec-1ed0-19a7e77553d0
@@ -487,16 +494,16 @@ begin
 				DataFrame
 	
 	#Multiplying nox by 1,000 to be easier to compare to CO2 figures
-	emissions[:nox]*=1000   #g/km
-	emissions[:label] = ""
+	emissions[!,:nox]*=1000   #g/km
+	emissions[!,:label] .= ""
 	nothing
 end
 
 # ╔═╡ 2fa9e830-70d2-11ec-15b1-73a3d2c33b71
 begin
 	#Getting ylimits
-	yaxs_min_vals = [minimum(emissions[k]) for k in [:co2,:nox]] |> minimum;
-	yaxs_max_vals = [maximum(emissions[k]) for k in [:co2,:nox]] |> maximum;
+	yaxs_min_vals = [minimum(emissions[!,k]) for k in [:co2,:nox]] |> minimum;
+	yaxs_max_vals = [maximum(emissions[!,k]) for k in [:co2,:nox]] |> maximum;
 	yaxs_vals = [yaxs_min_vals,yaxs_max_vals];
 
 	#Initialise plot
@@ -815,6 +822,7 @@ When model inputs are passed as distributions, it is more insightful to run a mo
 # ╠═df258e00-7324-11ec-252e-75d9423c2f07
 # ╠═4a988750-732f-11ec-33fc-31be90d0bd29
 # ╟─c005ea00-7325-11ec-3ba4-73cd1d59b0dc
+# ╠═81458fbe-d6e5-484a-9f9e-d0539c6acd6d
 # ╠═de6bdb00-5032-11ec-1ed0-19a7e77553d0
 # ╟─0b2d1460-5150-11ec-342f-cfd379b234c5
 # ╟─6cc5a3f2-7071-11ec-25e7-19525d559590
