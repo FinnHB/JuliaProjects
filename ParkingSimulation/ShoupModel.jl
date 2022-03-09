@@ -183,11 +183,9 @@ function init_dataframe(pparams::NamedTuple, cparams::NamedTuple, mparams::Named
     df_names = map(string, vcat(keys(pparams)..., keys(cparams)...))
 
     #Create dataframe of outputs & apply maximum & minimum conditions
-    df = DataFrame(sample_vals.(df_params, num_arrivals)) |>
+    df = DataFrame(sample_vals.(df_params, num_arrivals), :auto) |>
          df -> float.(df) |>
          df -> rename(df, df_names)
-
-    #!! NEED TO CALCULATE C*!!
 
     #Truncate values at the minimum values
     df.t = [maximum(x) for x in eachrow(df[:,[:t,:mint]])]
@@ -284,6 +282,10 @@ function run_simulation(df, pparams, cparams, mparams)
     parking_offs = Union{Nothing,Float64,Int64}[nothing for i in mrange]
     cruising = Union{Nothing,Float64,Int64}[nothing for i in mrange]
 
+    #Starting conditions for non-empty carb-parking
+    init_occupancy = abs.(df[1:state.curb_park_current,:arrt]-df[1:state.curb_park_current,:tmin])
+    init_occupancy = Union{Nothing,Float64,Int64}[i for i in init_occupancy]
+
     #Iterate through every minute
     for i in mrange
         #- Starting -#
@@ -292,11 +294,13 @@ function run_simulation(df, pparams, cparams, mparams)
 
         #- Move existing drivers -#
         #Update stored values
+        update_array!(init_occupancy, x -> x-1)
         update_array!(parking_curb, x -> x-1)
         update_array!(parking_offs, x -> x-1)
         update_array!(cruising, x -> x-1)
 
         #Leave parking
+        state.curb_park_current -= state.curb_park_current > 0 && Int(sum(get_val(init_occupancy, x -> x<=0)))
         state.curb_park_current -= state.curb_park_current > 0 && Int(sum(get_val(parking_curb, x -> x<=0)))
         state.offs_park_current -= state.offs_park_current > 0 && Int(sum(get_val(parking_offs, x -> x<=0)))
 
@@ -365,7 +369,8 @@ function run_simulation(df, pparams, cparams, mparams)
         end
 
         #- Update values -#
-        #Parking situation
+        #Account for initial occupancy
+        update_array!(init_occupancy, x -> ifelse(x>0,x,nothing))
         update_array!(parking_curb, x -> ifelse(x>0,x,nothing))
         update_array!(parking_offs, x -> ifelse(x>0,x,nothing))
         update_array!(cruising, x -> ifelse(x>0,x,nothing))
