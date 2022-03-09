@@ -225,5 +225,5 @@ D = pad_matrix(rand(Bernoulli(0.2), 15, 15), 15)
 out_gif = life_gif(D, zoom = 10, n = 150)
 
 #Creating a gif
-output_file = "./GameOfLife/GoF.gif"
+output_file = "./GoF.gif"
 gif(out_gif, output_file, fps = 14)
