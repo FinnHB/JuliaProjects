@@ -10,4 +10,3 @@ This repository includes several small projects. The projects generally include 
 |------------------------------------|---------------------------------------------------------------------------------|
 | **Game of Life**                   | Conway's game of life coded up in Julia                                         |
 | **Parking Simulation**             | Julia implementation of the 2006 paper by Donald Shoup, *Cruising for Parking*  |
-| **Firm Choice**                    | Firm-level optimisation and Cournot competition examples                        |
