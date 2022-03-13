@@ -144,7 +144,7 @@ end
 
 # ╔═╡ 586da741-9a05-4192-b491-22bdc84c35cc
 md"""
-###### 1.b Net Present Value (NPV)
+###### 1.b -- Net Present Value (NPV)
 Now suppose the government announces that the above policy will come into effect in 2025 and will stay in place forever. What is today's net present value of the cost to the firm? Assume an annual discount rate of $discount_rate%.
 """
 
@@ -172,7 +172,7 @@ NPV = NPV_2025/discount_rate;
 
 # ╔═╡ 03752178-755a-4ba5-a79f-7e3115c41605
 md"""
-###### 1.c
+###### 1.c -- Cournot Duopoly
 Two firms produce an identical product and compete in a Cournot duopoly. The market demand curve is given by **``P = 9-Q=9-q_1-q_2``**. Both firms emit $intensity_CO₂ tCO``_2`` per unit of output. They initially both have marginal cost of 0. Firms can abate emissions at cost **``c(a) = 1000a^3``**. What is the effect of a USD $tax_CO₂ carbon tax on the equilibrium price?
 """
 
@@ -362,5 +362,5 @@ The resultant outcome is that prior to the implementation of the carbon tax, bot
 # ╟─03fd59b8-e5d2-4a7f-8856-0bda4327bafb
 # ╟─49cbc9c3-43a5-49b9-8331-0b7e6134a164
 # ╠═2275fa44-5c58-40ad-8be5-aa3a2fb563db
-# ╠═6d2c21a1-ba81-4972-bf5c-623d01db8c25
+# ╟─6d2c21a1-ba81-4972-bf5c-623d01db8c25
 # ╠═dcc719f6-e791-4908-99f0-319e08712ed2
