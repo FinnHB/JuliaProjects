@@ -8,5 +8,6 @@ This repository includes several small projects. The projects generally include 
 ##### Project list
 |  <font size="4">Project</font>     | <font size="4">Description</font>                                               |
 |------------------------------------|---------------------------------------------------------------------------------|
+| **Firm Choice**                    | Solving optimisation for firm choices                                           |
 | **Game of Life**                   | Conway's game of life coded up in Julia                                         |
 | **Parking Simulation**             | Julia implementation of the 2006 paper by Donald Shoup, *Cruising for Parking*  |
