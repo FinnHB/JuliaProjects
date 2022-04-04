@@ -64,7 +64,7 @@ end
 # ╔═╡ 7a9efb6b-0790-414e-815e-a774043bb904
 md"""
 ###### 1.a -- Firm's CO``_2`` Abatement Choice
-Assume that a firm can produce ``Q`` units of output at a cost of ``0.2Q+Q^{\frac{1}{2}}``, where each unit of output generates $intensity_CO₂ tCO``_2``. In 2025, the government will impose a carbon tax of € $tax_CO₂_2025 per tCO``_2``. However, the firm can also choose to abate a fraction ``a`` of their emissions at a cost of ``1200*(1 + 10a^3 - 8a^2)`` where ``a \in [0,1]``.
+Assume that a firm can produce ``Q`` units of output at a cost of ``0.2Q+Q^{\frac{1}{2}}``, where each unit of output generates $intensity_CO₂ tCO``_2``. In 2025, the government will impose a carbon tax of € $tax_CO₂_2025 per tCO``_2``. However, the firm can also choose to abate a fraction ``a`` of their emissions at a cost of ``730\times a^{\frac{1}{a}}`` where ``a \in [0,1]``.
 
 Once the tax comes in to effect, how much CO``_2`` will the firm emit and what will be the the total annual cost of the carbon tax policy to the firm?
 """
@@ -272,6 +272,52 @@ gradual_NPV_perpituity = npv_gradual(final_year=10_000)
 # ╔═╡ 5062ea43-0509-4385-abdb-6b83e7535c06
 
 
+# ╔═╡ 3e380002-2987-44f7-a318-b54adaf9ad69
+md"""
+###### 1.c -- Permit markets
+Instead of implementing a carbon tax, the government is thinking that launching a permit scheme may be a more effective way to reduce emissions. They calculated that in order to reach the net-zero target, emissions cannot be higher than 2.8 from 2025 onward.
+
+The permit market will apply to two firms, both producing ``Q=``$Q units of output. Firm ``A`` faces a production cost of ``0.2Q+Q^{\frac{1}{2}}`` and an abatement cost of ``730 \times a^{\frac{1}{a}}`` and firm ``B`` faces the same production cost, but an abatement cost of ``500 \times a^{\frac{1}{3a}}``.
+
+Assuming that the permits are divided equally between the two firms, how much will each firm emit, and what will be the market price of the permits?
+"""
+
+# ╔═╡ 5eb7d942-e523-4c09-b011-6b75f2ac1185
+begin
+	#Firm abatement costs function
+	f_abate_A(a) = 730*a^(1/a)
+	f_abate_B(a) = 500*a^(1/3a)
+
+	#Firm production cost function
+	f_prodcost_A(Q) = f_prodcost_B(Q) = 0.2Q+Q^(1/2)
+	
+	#Firm objective functions
+	f_obj_A(a) = f_prodcost_A(Q) + (Q*intensity)*(1-a) + f_abatement(a)
+end
+
+# ╔═╡ e23e271e-5efc-456d-a8d1-3275b1765ad8
+abate_A = 1-(2.8/2)/(Q*intensity_CO₂)
+
+# ╔═╡ b12b81a0-fc7b-4d99-868c-29a3a382107a
+f_abate_A(0.3)
+
+# ╔═╡ dd11caf1-66c1-47da-99bd-9356048c9e55
+f_abate_B(0.3)
+
+# ╔═╡ 08e4ce39-31d2-417e-8482-f6523fa10b26
+begin
+	plot([(a, f_abate_A(a)) for a in 0:0.001:1], label="Firm A")
+	plot!([(a, f_abate_B(a)) for a in 0:0.001:1], label="Firm B")
+end
+
+# ╔═╡ aa7bb6c4-3108-4397-b668-0f810789dd3e
+md"""
+First we calculate the emissions of each firm prior to any intervention.
+"""
+
+# ╔═╡ ca8244fa-5d7e-4cf9-8a26-b4722991b5a4
+
+
 # ╔═╡ c40c6447-e2ee-43ca-9c4e-a6332cb63cba
 
 
@@ -299,8 +345,7 @@ begin
 	change_NPV_perpituity = gradual_NPV_perpituity - sudden_NPV_perpituity
 
 	#Part 1.c
-	permit_start = round(0.80*10Q*intensity_CO₂, digits=1)
-	permit_limit = round(0.30*10Q*intensity_CO₂, digits=1)
+	permit_limit = round(0.70*2Q*intensity_CO₂, digits=1)
 	nothing
 end
 
@@ -310,14 +355,6 @@ md"""
 Assuming that we are currently in 2022, the first carbon tax of € $tax_CO₂_2025 will come in place in three years. The government has also announced that in 2035, it will increase the tax to € $tax_CO₂_2035 at which point this increased rate will stay in place for perpituity.
 
 What would be today's net present value of the firm's costs assuming an annual discount rate of $percent_discount_rate%? How would your answer change if the government decided to instead apply a constant growth rate between 2025 and 2035?
-"""
-
-# ╔═╡ 3e380002-2987-44f7-a318-b54adaf9ad69
-md"""
-###### 1.c -- Permit markets
-Instead of implementing a carbon tax, the government is thinking that launching a permit scheme may be a more effective way to reduce emissions. There will be 10 identical firms operating within the permit market, and the government has calculated that it needs to reduce emissions to $permit_limit tCO``_2`` by 2035 to have a chance of meeting its climate commitments. To achieve this, the emissions trading scheme will take force in 2025, limiting emissions to $permit_start tCO``_2``
-
-As there is an important election coming up, the politicians are pushing for 
 """
 
 # ╔═╡ 2275fa44-5c58-40ad-8be5-aa3a2fb563db
@@ -379,7 +416,7 @@ In this case, the cumulative costs the firm will face by 2035 in NPV will be €
 # ╠═ec0280b8-2dd5-4e09-9cf4-1614684f2111
 # ╟─d8bb56e9-5045-4b80-804d-53b90692f765
 # ╟─35388a65-ca44-4e96-840f-fea92f47eab9
-# ╟─7a9efb6b-0790-414e-815e-a774043bb904
+# ╠═7a9efb6b-0790-414e-815e-a774043bb904
 # ╟─15f3da24-b85c-4a9a-840e-5e8646688d8e
 # ╟─d3ff6a61-2ed8-4a3f-b2c2-9d9b4ad1f427
 # ╠═c6129e50-56cd-4e7d-942d-98239c1b3603
@@ -411,6 +448,13 @@ In this case, the cumulative costs the firm will face by 2035 in NPV will be €
 # ╟─0b30a4d0-6d01-4d6f-8f61-d81fec56a0f8
 # ╟─5062ea43-0509-4385-abdb-6b83e7535c06
 # ╠═3e380002-2987-44f7-a318-b54adaf9ad69
+# ╠═5eb7d942-e523-4c09-b011-6b75f2ac1185
+# ╠═e23e271e-5efc-456d-a8d1-3275b1765ad8
+# ╠═b12b81a0-fc7b-4d99-868c-29a3a382107a
+# ╠═dd11caf1-66c1-47da-99bd-9356048c9e55
+# ╠═08e4ce39-31d2-417e-8482-f6523fa10b26
+# ╠═aa7bb6c4-3108-4397-b668-0f810789dd3e
+# ╠═ca8244fa-5d7e-4cf9-8a26-b4722991b5a4
 # ╟─c40c6447-e2ee-43ca-9c4e-a6332cb63cba
 # ╟─240daf8c-cebb-479c-bdec-44013b03c821
 # ╟─03fd59b8-e5d2-4a7f-8856-0bda4327bafb
