@@ -282,6 +282,13 @@ The permit market will apply to two firms, both producing ``Q=``$Q units of outp
 Assuming that the permits are divided equally between the two firms, how much will each firm emit, and what will be the market price of the permits?
 """
 
+# ╔═╡ a3563b82-3e2b-4688-971c-f2d70a8b0df1
+md"""
+###### Answer
+
+First, lets have a look at how much each firm would pollute without trading permits. In this situation, each firm will use up their allocated share of permits, and be forced to abate the remaining emissions.
+"""
+
 # ╔═╡ 5eb7d942-e523-4c09-b011-6b75f2ac1185
 begin
 	#Firm abatement costs function
@@ -294,6 +301,11 @@ begin
 	#Firm objective functions
 	f_obj_A(a) = f_prodcost_A(Q) + (Q*intensity)*(1-a) + f_abatement(a)
 end
+
+# ╔═╡ d64113ae-8391-4054-8436-cb3cb63e85e5
+md"""
+Without trading permits, each firm will use up their allocated share of permits, and be forced to abate the remaining emissions.
+"""
 
 # ╔═╡ e23e271e-5efc-456d-a8d1-3275b1765ad8
 abate_A = 1-(2.8/2)/(Q*intensity_CO₂)
@@ -312,7 +324,9 @@ end
 
 # ╔═╡ aa7bb6c4-3108-4397-b668-0f810789dd3e
 md"""
-First we calculate the emissions of each firm prior to any intervention.
+1. Calculate the emissions of each firm prior to any intervention.
+2. Each firm is willing to buy/sell the permits below/above their marginal abatement cost
+3. Each firm will trade until the marginal abatement cost of the two firms equalise
 """
 
 # ╔═╡ ca8244fa-5d7e-4cf9-8a26-b4722991b5a4
@@ -447,8 +461,10 @@ In this case, the cumulative costs the firm will face by 2035 in NPV will be €
 # ╟─72160409-650c-42f5-8fa2-eac2d7df6a2c
 # ╟─0b30a4d0-6d01-4d6f-8f61-d81fec56a0f8
 # ╟─5062ea43-0509-4385-abdb-6b83e7535c06
-# ╠═3e380002-2987-44f7-a318-b54adaf9ad69
+# ╟─3e380002-2987-44f7-a318-b54adaf9ad69
+# ╠═a3563b82-3e2b-4688-971c-f2d70a8b0df1
 # ╠═5eb7d942-e523-4c09-b011-6b75f2ac1185
+# ╠═d64113ae-8391-4054-8436-cb3cb63e85e5
 # ╠═e23e271e-5efc-456d-a8d1-3275b1765ad8
 # ╠═b12b81a0-fc7b-4d99-868c-29a3a382107a
 # ╠═dd11caf1-66c1-47da-99bd-9356048c9e55
