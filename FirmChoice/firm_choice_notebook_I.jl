@@ -9,7 +9,7 @@ using Pkg; 	Pkg.activate("Project.toml")
 
 # ╔═╡ cc4a8f90-a0c6-11ec-1a1a-8bac26689c58
 begin
-	using Optim, Plots
+	using Optim, Plots, ForwardDiff
 	plotly()
 	nothing
 end
@@ -39,7 +39,7 @@ One key difference is that some of the problems may be time-consuming to solve b
 
 # ╔═╡ 9a0de994-7a32-4a37-9ca8-b013bec86434
 md"""
-## Firm's Choices - Optimal CO``_2`` Abatement & Cournot Competition
+## Firm's Choices - Optimal CO``_2`` Abatement
 """
 
 # ╔═╡ 288b9f53-7184-4d51-a9b7-1990d7b359ad
@@ -52,8 +52,7 @@ begin
 	tax_CO₂_2025 = 120
 	tax_CO₂_2035 = 240
 	discount_rate = 0.02
-	nothing
-end
+end;
 
 # ╔═╡ d8bb56e9-5045-4b80-804d-53b90692f765
 
@@ -91,8 +90,7 @@ begin
 	function f_objective(a; tax=tax_CO₂_2025, Q=Q, intensity=intensity_CO₂)
 		return f_prodcost(Q) + tax*(Q*intensity)*(1-a) + f_abatement(a)
 	end
-	nothing
-end
+end;
 
 # ╔═╡ 3e0ad8ad-8acf-468e-8bb6-85a258cc8b92
 result = optimize(x->f_objective(x[1]), [0.0]);
@@ -142,8 +140,7 @@ begin
 	tax_cost = (Q * intensity_CO₂ * (1-a_optim)) * tax_CO₂_2025
 	production_cost = f_prodcost(Q)
 	total_cost = production_cost + tax_cost + abate_cost
-	nothing
-end
+end;
 
 # ╔═╡ e22ca996-8c8c-4e69-a28d-c4aa1ff33ef2
 md"""
@@ -277,9 +274,9 @@ md"""
 ###### 1.c -- Permit markets
 Instead of implementing a carbon tax, the government is thinking that launching a permit scheme may be a more effective way to reduce emissions. They calculated that in order to reach the net-zero target, emissions cannot be higher than 2.8 from 2025 onward.
 
-The permit market will apply to two firms, both producing ``Q=``$Q units of output. Firm ``A`` faces a production cost of ``0.2Q+Q^{\frac{1}{2}}`` and an abatement cost of ``730 \times a^{\frac{1}{a}}`` and firm ``B`` faces the same production cost, but an abatement cost of ``500 \times a^{\frac{1}{3a}}``.
+The permit market will apply to two firms, both producing ``Q=``$Q units of output, where each unit of output emits $intensity_CO₂ tCO``_2``. Firm ``A`` faces a production cost of ``0.2Q+Q^{\frac{1}{2}}`` and an abatement cost of ``730 \times a^{\frac{1}{a}}`` and firm ``B`` faces the same production cost, but an abatement cost of ``500 \times a^{\frac{1}{3a}}``.
 
-Assuming that the permits are divided equally between the two firms, how much will each firm emit, and what will be the market price of the permits?
+Assuming that the permits are divided equally between the two firms, how much will each firm emit? If each permit counts for 0.1 tCO``_2``, what will be the equilibrium price of the permits?
 """
 
 # ╔═╡ a3563b82-3e2b-4688-971c-f2d70a8b0df1
@@ -293,34 +290,58 @@ First, lets have a look at how much each firm would pollute without trading perm
 begin
 	#Firm abatement costs function
 	f_abate_A(a) = 730*a^(1/a)
-	f_abate_B(a) = 500*a^(1/3a)
+	f_abate_B(a) = 500*a^(1/(3a))
 
-	#Firm production cost function
-	f_prodcost_A(Q) = f_prodcost_B(Q) = 0.2Q+Q^(1/2)
+	#First derivative of abatement cost function
+	df_abate_A(a) = ForwardDiff.derivative(f_abate_A, a)
+	df_abate_B(a) = ForwardDiff.derivative(f_abate_B, a)
 	
-	#Firm objective functions
-	f_obj_A(a) = f_prodcost_A(Q) + (Q*intensity)*(1-a) + f_abatement(a)
-end
+	#Total abatement cost of both firms
+	f_tac(a1,a2) = f_abate_A(a1) + f_abate_B(a2)
+end;
 
 # ╔═╡ d64113ae-8391-4054-8436-cb3cb63e85e5
 md"""
 Without trading permits, each firm will use up their allocated share of permits, and be forced to abate the remaining emissions.
 """
 
-# ╔═╡ e23e271e-5efc-456d-a8d1-3275b1765ad8
-abate_A = 1-(2.8/2)/(Q*intensity_CO₂)
-
-# ╔═╡ b12b81a0-fc7b-4d99-868c-29a3a382107a
-f_abate_A(0.3)
-
-# ╔═╡ dd11caf1-66c1-47da-99bd-9356048c9e55
-f_abate_B(0.3)
-
 # ╔═╡ 08e4ce39-31d2-417e-8482-f6523fa10b26
 begin
 	plot([(a, f_abate_A(a)) for a in 0:0.001:1], label="Firm A")
 	plot!([(a, f_abate_B(a)) for a in 0:0.001:1], label="Firm B")
 end
+
+# ╔═╡ 4be67689-ee9e-4fd1-a767-315229580237
+begin
+	xs = 0:0.001:1
+	plot([(a, df_abate_A(a)) for a in xs], label="Firm A")
+	plot!([(a, df_abate_B(a)) for a in xs], label="Firm B")
+end
+
+# ╔═╡ 6942ce82-9513-4234-9775-d0b7a253055f
+begin
+	#Calculate cost from combinations
+	window = range(0,1, length=101)
+	grid = [[a₁,a₂,f_tac(a₁,a₂)] for a₁ in window, a₂ in window]
+
+	#Extract cost element from grid
+	grid_costs = map(
+		g -> ifelse(g[1]+g[2] >= 0.6, g[3], Inf),
+		grid
+	)
+end;
+
+# ╔═╡ 81cafaf3-5f92-489d-9341-1160425288c1
+a1,a2,c = grid[findmin(grid_costs)[2]];
+
+# ╔═╡ ec704946-35ca-4b6b-91fc-05223fa64756
+plot(window, window, f_tac, st=:surface)
+
+# ╔═╡ 509ced6b-ee4b-4003-b19d-bc4330c287bd
+f_abate_A(a1) + f_abate_B(a2)
+
+# ╔═╡ f0b3a489-1c76-44a8-bfc9-816b3d664e90
+
 
 # ╔═╡ aa7bb6c4-3108-4397-b668-0f810789dd3e
 md"""
@@ -360,8 +381,7 @@ begin
 
 	#Part 1.c
 	permit_limit = round(0.70*2Q*intensity_CO₂, digits=1)
-	nothing
-end
+end;
 
 # ╔═╡ 586da741-9a05-4192-b491-22bdc84c35cc
 md"""
@@ -386,8 +406,7 @@ begin
 	rounded_gradual_NPV_perpituity = Int(round(gradual_NPV_perpituity))
 	rounded_change_NPV_2035 = Int(round(change_NPV_2035))
 	rounded_change_NPV_perpituity = Int(round(change_NPV_perpituity))
-	nothing
-end
+end;
 
 # ╔═╡ 1314ae51-4e3d-4993-9b9e-b948e0cd0600
 md"""
@@ -430,7 +449,7 @@ In this case, the cumulative costs the firm will face by 2035 in NPV will be €
 # ╠═ec0280b8-2dd5-4e09-9cf4-1614684f2111
 # ╟─d8bb56e9-5045-4b80-804d-53b90692f765
 # ╟─35388a65-ca44-4e96-840f-fea92f47eab9
-# ╠═7a9efb6b-0790-414e-815e-a774043bb904
+# ╟─7a9efb6b-0790-414e-815e-a774043bb904
 # ╟─15f3da24-b85c-4a9a-840e-5e8646688d8e
 # ╟─d3ff6a61-2ed8-4a3f-b2c2-9d9b4ad1f427
 # ╠═c6129e50-56cd-4e7d-942d-98239c1b3603
@@ -462,13 +481,16 @@ In this case, the cumulative costs the firm will face by 2035 in NPV will be €
 # ╟─0b30a4d0-6d01-4d6f-8f61-d81fec56a0f8
 # ╟─5062ea43-0509-4385-abdb-6b83e7535c06
 # ╟─3e380002-2987-44f7-a318-b54adaf9ad69
-# ╠═a3563b82-3e2b-4688-971c-f2d70a8b0df1
+# ╟─a3563b82-3e2b-4688-971c-f2d70a8b0df1
 # ╠═5eb7d942-e523-4c09-b011-6b75f2ac1185
-# ╠═d64113ae-8391-4054-8436-cb3cb63e85e5
-# ╠═e23e271e-5efc-456d-a8d1-3275b1765ad8
-# ╠═b12b81a0-fc7b-4d99-868c-29a3a382107a
-# ╠═dd11caf1-66c1-47da-99bd-9356048c9e55
-# ╠═08e4ce39-31d2-417e-8482-f6523fa10b26
+# ╟─d64113ae-8391-4054-8436-cb3cb63e85e5
+# ╟─08e4ce39-31d2-417e-8482-f6523fa10b26
+# ╟─4be67689-ee9e-4fd1-a767-315229580237
+# ╠═6942ce82-9513-4234-9775-d0b7a253055f
+# ╠═81cafaf3-5f92-489d-9341-1160425288c1
+# ╠═ec704946-35ca-4b6b-91fc-05223fa64756
+# ╠═509ced6b-ee4b-4003-b19d-bc4330c287bd
+# ╠═f0b3a489-1c76-44a8-bfc9-816b3d664e90
 # ╠═aa7bb6c4-3108-4397-b668-0f810789dd3e
 # ╠═ca8244fa-5d7e-4cf9-8a26-b4722991b5a4
 # ╟─c40c6447-e2ee-43ca-9c4e-a6332cb63cba
