@@ -9,10 +9,9 @@ using Pkg; 	Pkg.activate("Project.toml")
 
 # ╔═╡ cc4a8f90-a0c6-11ec-1a1a-8bac26689c58
 begin
-	using Optim, Plots, ForwardDiff
+	using Plots, ForwardDiff, Optim, JuMP, Ipopt
 	plotly()
-	nothing
-end
+end;
 
 # ╔═╡ 7a6770b3-0fff-4f51-9257-9c57b2bbd7dc
 
@@ -75,7 +74,9 @@ Once the tax comes in to effect, how much CO``_2`` will the firm emit and what w
 md"""
 ###### Answer
 
-Solving this with Julia is straight forward. All we need to do is specify what our objective function is, and determine what we want to minimise. Once the objective functions has been formulated, we just need to pass in the starting point, and **Optim.jl** finds the closest minima.
+Intuitively, the firm wants to minimise its total costs with respect to its abatement decision ``a``. Mathematically, this would be equal to setting ``\frac{\partial a}{\partial f_{TC}} = 0``.
+
+To solve this in Julia using **JuMP.jl** , we can simply set up our objective function and specify the constraints and JuMP will do the rest.
 """
 
 # ╔═╡ c6129e50-56cd-4e7d-942d-98239c1b3603
@@ -92,18 +93,37 @@ begin
 	end
 end;
 
-# ╔═╡ 3e0ad8ad-8acf-468e-8bb6-85a258cc8b92
-result = optimize(x->f_objective(x[1]), [0.0]);
+# ╔═╡ 2fdb2ab4-cda9-4997-93ab-7782c4e7e4f1
+md"""
+Once we have specified our functions, we pass it through to one of the solvers, **Ipopt.jl** in this case. 
+"""
+
+# ╔═╡ 27e4830e-b0a6-4df9-9f33-177f238d4a83
+begin
+	#Initialise the model & suppress output print status
+	model = Model(Ipopt.Optimizer)
+	set_optimizer_attribute(model, "print_level", 0)
+
+	#Register the objective function with one free variable (a)
+	register(model, :f_obj, 1, f_objective; autodiff = true)
+
+	#Specify the variables of interest & their constraints
+	@variable(model, 0 <= aₘ <= 1)
+
+	#Specify the objective which we want to minimise
+	@NLobjective(model, Min, f_obj(aₘ))
+
+	#Optimise the model
+	optimize!(model)
+
+	#Store optimal values
+	a_optim = value(aₘ)
+end;
 
 # ╔═╡ 276bfd3c-6406-49e9-b270-5e6ae286221c
 md"""
-To access the value which minimzes the our function we simply access the minimizer from our results.
-
-*N.B. Sometimes results can be dependent on the starting value, therefore, in cases without a global minima, multiple starting points may want to be explored.*
+After the model is finished solving, we can simply access the optimised value, `a_optim`, from the model.
 """
-
-# ╔═╡ 11c8bf82-06d1-4d70-b445-3e87ce8ff9f6
-a_optim = result.minimizer[1]
 
 # ╔═╡ 9555c941-ed7d-4eb6-bdd8-0e62fa95f3c3
 md"""
@@ -113,9 +133,9 @@ We can easily visualise the results for inspection. Note that the starting point
 # ╔═╡ 9e867ead-3a11-4216-9e6b-7f9d077d9503
 begin
 	#Specified in a function to avoid reactivity issues with variable names
-	function plot_results(result)
+	function plot_results(optimal_abatement)
 		#Extracting results
-		min_x = result.minimizer[1]
+		min_x = optimal_abatement
 		objectivef = [(x, f_objective(x)) for x in 0:0.001:1]
 	
 		#Annotation location
@@ -130,7 +150,7 @@ begin
 	end
 
 	#Plotting results
-    plot_results(result)
+    plot_results(a_optim)
 end
 
 # ╔═╡ dfef4026-100a-47d3-ab63-55b80b6c6d35
@@ -276,14 +296,14 @@ Instead of implementing a carbon tax, the government is thinking that launching 
 
 The permit market will apply to two firms, both producing ``Q=``$Q units of output, where each unit of output emits $intensity_CO₂ tCO``_2``. Firm ``A`` faces a production cost of ``0.2Q+Q^{\frac{1}{2}}`` and an abatement cost of ``730 \times a^{\frac{1}{a}}`` and firm ``B`` faces the same production cost, but an abatement cost of ``500 \times a^{\frac{1}{3a}}``.
 
-Assuming that the permits are divided equally between the two firms, how much will each firm emit? If each permit counts for 0.1 tCO``_2``, what will be the equilibrium price of the permits?
+Assuming that the permits are divided equally between the two firms and they are not allowed to trade, how much will each firm emit? How about if they can freely trade with no frictions? If each permit counts for 0.1 tCO``_2``, what will be the equilibrium price of the permits?
 """
 
 # ╔═╡ a3563b82-3e2b-4688-971c-f2d70a8b0df1
 md"""
 ###### Answer
 
-First, lets have a look at how much each firm would pollute without trading permits. In this situation, each firm will use up their allocated share of permits, and be forced to abate the remaining emissions.
+As with most questions, the first step will be to set up the objective function which we want to minimise. In this case, the variables of interest would be:
 """
 
 # ╔═╡ 5eb7d942-e523-4c09-b011-6b75f2ac1185
@@ -291,31 +311,78 @@ begin
 	#Firm abatement costs function
 	f_abate_A(a) = 730*a^(1/a)
 	f_abate_B(a) = 500*a^(1/(3a))
-
-	#First derivative of abatement cost function
-	df_abate_A(a) = ForwardDiff.derivative(f_abate_A, a)
-	df_abate_B(a) = ForwardDiff.derivative(f_abate_B, a)
 	
 	#Total abatement cost of both firms
 	f_tac(a1,a2) = f_abate_A(a1) + f_abate_B(a2)
 end;
 
-# ╔═╡ d64113ae-8391-4054-8436-cb3cb63e85e5
+# ╔═╡ 1fc88790-cca9-4a9d-881d-dfd01f070b36
 md"""
-Without trading permits, each firm will use up their allocated share of permits, and be forced to abate the remaining emissions.
+In the first instance where both firms are not allowed to trade, and each handed an equal amount of permits, we simply need to plug the level of abatement, ``a \in [0,1]``, in to the respective functions. We can simply calculate the value of ``a`` as
 """
 
-# ╔═╡ 08e4ce39-31d2-417e-8482-f6523fa10b26
+# ╔═╡ 57b51df9-d5ac-4e3f-8425-eb0f42c62df0
+total_abatement_effort = 1 - 2.8/(2Q*intensity_CO₂);
+
+# ╔═╡ 2212cbe6-d2a2-4431-8f48-6aa21714f977
 begin
-	plot([(a, f_abate_A(a)) for a in 0:0.001:1], label="Firm A")
-	plot!([(a, f_abate_B(a)) for a in 0:0.001:1], label="Firm B")
+	#Total firm emissions with no abatement
+	e = Q*intensity_CO₂
+
+	#Firm emissions after abatement
+	firm_emissions = (A = (1-total_abatement_effort)*e,
+	                  B = (1-total_abatement_effort)*e)
+end;
+
+# ╔═╡ ac355299-80f3-4950-b651-41f29e75539b
+md"""
+In other words, the firms will emit the same amount where $firm_emissions tCO``_2``. Visually, this can be observed as being the vertical line on the diagram below.
+"""
+
+# ╔═╡ affb8460-5b78-4aec-a15c-c8dc62049488
+begin
+	plot([(a, f_abate_A(a)) for a in 0:0.001:1], label="Firm A", lw=3)
+	plot!([(a, f_abate_B(a)) for a in 0:0.001:1], label="Firm B", lw=3)
+	vline!([total_abatement_effort], label=false, line=(2,:dot,:gray))
 end
 
-# ╔═╡ 4be67689-ee9e-4fd1-a767-315229580237
+# ╔═╡ fd1a2e5c-ecd3-4bdd-ba5e-07198aeeac4c
+md"""
+However, the two firms don't face the same abatement cost function. At low leverls of abatement, Firm B faces a much higher abatement cost than firm A, consequently, under equal allocation with no trading Firm B is overburdened. This can be seen when comparing the cost faced by the two firms.
+"""
+
+# ╔═╡ ccefe417-cfb3-4a49-94d6-64e29c6fd5ca
+notrade_cost_A, notrade_cost_B = (f_abate_A(0.3), f_abate_B(0.3))
+
+# ╔═╡ 32fad45c-dd52-4f32-ad66-b03ae863bdd5
+md"""
+If we now allow firms to trade freely, firms will trade to the point where their marginal abatement costs equalise. This is because that is the point where both will face the same cost of abating one additional unit and no further surplus can be gained from trading.
+"""
+
+# ╔═╡ a21e0d60-0135-4b42-aa3e-adc348f96401
 begin
-	xs = 0:0.001:1
-	plot([(a, df_abate_A(a)) for a in xs], label="Firm A")
-	plot!([(a, df_abate_B(a)) for a in xs], label="Firm B")
+	#Initialise the model
+	m2 = Model(Ipopt.Optimizer)
+	set_optimizer_attribute(m2, "print_level", 0)
+
+	#Register the objective function with one free variable (a)
+	register(m2, :f_obj, 2, f_tac; autodiff = true)
+
+	#Set the variable space
+	@variable(m2, 0 <= aₘ₁ <= 1)
+	@variable(m2, 0 <= aₘ₂ <= 1)
+
+	#Pass objective function
+	@NLobjective(m2, Min, f_obj(aₘ₁, aₘ₂))
+
+	#Set the constraint
+	@constraint(m2, (aₘ₁ + aₘ₂) >= 0.6)
+
+	#Optimise the function
+	optimize!(m2)
+
+	#Store optimal values
+	optimal_abatement = (a₁_optim = value(aₘ₁), a₂_optim = value(aₘ₂))
 end
 
 # ╔═╡ 6942ce82-9513-4234-9775-d0b7a253055f
@@ -335,13 +402,36 @@ end;
 a1,a2,c = grid[findmin(grid_costs)[2]];
 
 # ╔═╡ ec704946-35ca-4b6b-91fc-05223fa64756
-plot(window, window, f_tac, st=:surface)
+begin
+	a1_trade, a2_trade = optimal_abatement.a₁_optim, optimal_abatement.a₂_optim
+	plot(window, window, f_tac, st=:surface)
+	plot!([(a1_trade, a2_trade, f_tac(a1_trade, a2_trade))], st=:scatter, color=:white, ms=1)
+end
 
 # ╔═╡ 509ced6b-ee4b-4003-b19d-bc4330c287bd
 f_abate_A(a1) + f_abate_B(a2)
 
-# ╔═╡ f0b3a489-1c76-44a8-bfc9-816b3d664e90
+# ╔═╡ 24decc28-ba76-43ee-a726-9b8f9ed67a7e
+a1
 
+# ╔═╡ 8ddc7bfc-fd84-4df6-816e-a3a397cd3e6b
+a2
+
+# ╔═╡ a1d9bbab-636f-4b62-95fe-a4b706491916
+begin
+	#First derivative of abatement cost function
+	df_abate_A(a) = ForwardDiff.derivative(f_abate_A, a)
+	df_abate_B(a) = ForwardDiff.derivative(f_abate_B, a)
+end
+
+# ╔═╡ 9f44f7dc-5d53-4f9a-a942-daecea5e2e7c
+df_abate_A(a1), df_abate_B(a2)
+
+# ╔═╡ a0c0c10f-a537-4816-88e1-5c8046465c77
+df_abate_A(optimal_abatement.a₁_optim), df_abate_B(optimal_abatement.a₂_optim)
+
+# ╔═╡ fbf32486-558b-455f-a28d-91af2f92cc8c
+optimal_abatement.a₁_optim
 
 # ╔═╡ aa7bb6c4-3108-4397-b668-0f810789dd3e
 md"""
@@ -381,6 +471,7 @@ begin
 
 	#Part 1.c
 	permit_limit = round(0.70*2Q*intensity_CO₂, digits=1)
+	total_notrade_cost = notrade_cost_A + notrade_cost_B
 end;
 
 # ╔═╡ 586da741-9a05-4192-b491-22bdc84c35cc
@@ -406,6 +497,10 @@ begin
 	rounded_gradual_NPV_perpituity = Int(round(gradual_NPV_perpituity))
 	rounded_change_NPV_2035 = Int(round(change_NPV_2035))
 	rounded_change_NPV_perpituity = Int(round(change_NPV_perpituity))
+	rounded_total_abatement_effort = round(total_abatement_effort,digits=2)
+	rounded_notrade_cost_A = round(notrade_cost_A,digits=2)
+	rounded_notrade_cost_B = round(notrade_cost_B,digits=2)
+	rounded_total_notrade_cost = round(total_notrade_cost,digits=2)
 end;
 
 # ╔═╡ 1314ae51-4e3d-4993-9b9e-b948e0cd0600
@@ -436,6 +531,16 @@ md"""
 In this case, the cumulative costs the firm will face by 2035 in NPV will be € $rounded_gradual_NPV_2035, and € $rounded_gradual_NPV_perpituity over the infinite horizon -- € $rounded_change_NPV_2035 and € $rounded_change_NPV_perpituity higher respectively.
 """
 
+# ╔═╡ dca6f88e-061e-46c0-be6c-69acbeb5219a
+md"""
+So, we know that total emissions need to be reduced by $rounded_total_abatement_effort, and if both firm A and firm B are allocated the same amount of permits, each one will need to abate the same amount as they are faced with the same production cost function.
+"""
+
+# ╔═╡ 1e5fc4bb-1e6b-43c2-bbcc-e09639285263
+md"""
+In this case, firm A faces a total abatement cost of € $rounded_notrade_cost_A, while firm B faces a cost of € $rounded_notrade_cost_B, resulting in a total cost of both firms of € $rounded_total_notrade_cost.
+"""
+
 # ╔═╡ Cell order:
 # ╠═e4e0036e-eccc-4a02-8be9-a44da57a194a
 # ╠═cc4a8f90-a0c6-11ec-1a1a-8bac26689c58
@@ -453,9 +558,9 @@ In this case, the cumulative costs the firm will face by 2035 in NPV will be €
 # ╟─15f3da24-b85c-4a9a-840e-5e8646688d8e
 # ╟─d3ff6a61-2ed8-4a3f-b2c2-9d9b4ad1f427
 # ╠═c6129e50-56cd-4e7d-942d-98239c1b3603
-# ╠═3e0ad8ad-8acf-468e-8bb6-85a258cc8b92
+# ╟─2fdb2ab4-cda9-4997-93ab-7782c4e7e4f1
+# ╠═27e4830e-b0a6-4df9-9f33-177f238d4a83
 # ╟─276bfd3c-6406-49e9-b270-5e6ae286221c
-# ╠═11c8bf82-06d1-4d70-b445-3e87ce8ff9f6
 # ╟─9555c941-ed7d-4eb6-bdd8-0e62fa95f3c3
 # ╟─9e867ead-3a11-4216-9e6b-7f9d077d9503
 # ╠═dfef4026-100a-47d3-ab63-55b80b6c6d35
@@ -483,14 +588,27 @@ In this case, the cumulative costs the firm will face by 2035 in NPV will be €
 # ╟─3e380002-2987-44f7-a318-b54adaf9ad69
 # ╟─a3563b82-3e2b-4688-971c-f2d70a8b0df1
 # ╠═5eb7d942-e523-4c09-b011-6b75f2ac1185
-# ╟─d64113ae-8391-4054-8436-cb3cb63e85e5
-# ╟─08e4ce39-31d2-417e-8482-f6523fa10b26
-# ╟─4be67689-ee9e-4fd1-a767-315229580237
+# ╟─1fc88790-cca9-4a9d-881d-dfd01f070b36
+# ╠═57b51df9-d5ac-4e3f-8425-eb0f42c62df0
+# ╟─dca6f88e-061e-46c0-be6c-69acbeb5219a
+# ╠═2212cbe6-d2a2-4431-8f48-6aa21714f977
+# ╟─ac355299-80f3-4950-b651-41f29e75539b
+# ╟─affb8460-5b78-4aec-a15c-c8dc62049488
+# ╟─fd1a2e5c-ecd3-4bdd-ba5e-07198aeeac4c
+# ╠═ccefe417-cfb3-4a49-94d6-64e29c6fd5ca
+# ╟─1e5fc4bb-1e6b-43c2-bbcc-e09639285263
+# ╟─32fad45c-dd52-4f32-ad66-b03ae863bdd5
+# ╠═a21e0d60-0135-4b42-aa3e-adc348f96401
 # ╠═6942ce82-9513-4234-9775-d0b7a253055f
 # ╠═81cafaf3-5f92-489d-9341-1160425288c1
 # ╠═ec704946-35ca-4b6b-91fc-05223fa64756
 # ╠═509ced6b-ee4b-4003-b19d-bc4330c287bd
-# ╠═f0b3a489-1c76-44a8-bfc9-816b3d664e90
+# ╠═24decc28-ba76-43ee-a726-9b8f9ed67a7e
+# ╠═8ddc7bfc-fd84-4df6-816e-a3a397cd3e6b
+# ╠═a1d9bbab-636f-4b62-95fe-a4b706491916
+# ╠═9f44f7dc-5d53-4f9a-a942-daecea5e2e7c
+# ╠═a0c0c10f-a537-4816-88e1-5c8046465c77
+# ╠═fbf32486-558b-455f-a28d-91af2f92cc8c
 # ╠═aa7bb6c4-3108-4397-b668-0f810789dd3e
 # ╠═ca8244fa-5d7e-4cf9-8a26-b4722991b5a4
 # ╟─c40c6447-e2ee-43ca-9c4e-a6332cb63cba
