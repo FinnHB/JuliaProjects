@@ -565,6 +565,14 @@ Finally, the last question asks for the equilibrium price of permits. Assuming t
 Since each firm emits $rounded_firm_emission tCO``_2`` and each firm permit counts for 0.1 tCO``_2``, a permit accounts for an abatement effort, ``a``, of $rounded_permit_abatement_share . Consequently, to get the cost per permit, we multiply the marginal abatement cost with the relative abatement effort of one permit. Solving for the permit price we get the equilibrium price of € $rounded_equilibrium_permit_price .
 """
 
+# ╔═╡ 722f1f82-198e-467a-b324-45235de84980
+md"""##### Useful resources"""
+
+# ╔═╡ ba71c821-b272-4962-9d61-f6564cc4576b
+md"""
+[Julia for economists -- Automatic differentiation and optimization](https://www.youtube.com/watch?v=B5O3xBolDCc&t=0s)
+"""
+
 # ╔═╡ Cell order:
 # ╠═e4e0036e-eccc-4a02-8be9-a44da57a194a
 # ╠═cc4a8f90-a0c6-11ec-1a1a-8bac26689c58
@@ -637,3 +645,5 @@ Since each firm emits $rounded_firm_emission tCO``_2`` and each firm permit coun
 # ╠═2275fa44-5c58-40ad-8be5-aa3a2fb563db
 # ╟─6d2c21a1-ba81-4972-bf5c-623d01db8c25
 # ╠═dcc719f6-e791-4908-99f0-319e08712ed2
+# ╟─722f1f82-198e-467a-b324-45235de84980
+# ╟─ba71c821-b272-4962-9d61-f6564cc4576b
