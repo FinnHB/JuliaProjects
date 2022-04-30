@@ -25,7 +25,7 @@ md"""
 
 ## Introduction
 
-This notebook is the first in a series of notebooks laying out the basics of how to solve an economic optimsation problem in Julia. In particular, this notebook covers a single optimisation problem relating to the firm's choice, and is similar to something which you may find in undegraduate or postgraduate problem sets.
+This notebook is the first in a series of notebooks laying out the basics of how to solve an economic optimsation problem in Julia. In particular, this notebook covers a single optimisation problem relating to the firm's choice, and is similar to something which you may find in undergraduate or postgraduate problem sets.
 
 One key difference is that some of the problems may be time-consuming to solve by hand.
 """
@@ -64,7 +64,7 @@ md"""
 ###### 1.a -- Firm's CO``_2`` Abatement Choice
 Assume that a firm can produce ``Q`` units of output at a cost of ``0.2Q+Q^{\frac{1}{2}}``, where each unit of output generates $intensity_CO₂ tCO``_2``. In 2025, the government will impose a carbon tax of € $tax_CO₂_2025 per tCO``_2``. However, the firm can also choose to abate a fraction ``a`` of their emissions at a cost of ``730\times a^{\frac{1}{a}}`` where ``a \in [0,1]``.
 
-Once the tax comes in to effect, how much CO``_2`` will the firm emit and what will be the the total annual cost of the carbon tax policy to the firm?
+Once the tax comes in to effect, how much CO``_2`` will the firm emit and what will be the total annual cost of the carbon tax policy to the firm?
 """
 
 # ╔═╡ 15f3da24-b85c-4a9a-840e-5e8646688d8e
@@ -164,7 +164,7 @@ end;
 
 # ╔═╡ e22ca996-8c8c-4e69-a28d-c4aa1ff33ef2
 md"""
-For future reference to total cost calculations, the we will use the following function for calculating total costs.
+For future reference to total cost calculations, we will use the following function for calculating total costs.
 """
 
 # ╔═╡ ef880d51-3456-4dbc-b0d2-bcc4a0a5a14d
@@ -237,7 +237,7 @@ end;
 sudden_NPV_2035 = npv_sudden(final_year=2034)
 
 # ╔═╡ ae238dab-a5bf-42c7-ba80-9cca9e007064
-sudden_NPV_perpituity = npv_sudden(final_year=10_000)
+sudden_NPV_perpetuity = npv_sudden(final_year=10_000)
 
 # ╔═╡ 6e8730ef-f27d-451d-ba18-3b8e72dbc944
 function npv_gradual(;final_year=2035)
@@ -278,7 +278,7 @@ end;
 gradual_NPV_2035 = npv_gradual(final_year=2035)
 
 # ╔═╡ d2d99ca5-9045-4a99-b68d-24ea0e34a7d7
-gradual_NPV_perpituity = npv_gradual(final_year=10_000)
+gradual_NPV_perpetuity = npv_gradual(final_year=10_000)
 
 # ╔═╡ 72160409-650c-42f5-8fa2-eac2d7df6a2c
 
@@ -296,7 +296,7 @@ Instead of implementing a carbon tax, the government is thinking that launching 
 
 The permit market will apply to two firms, both producing ``Q=``$Q units of output, where each unit of output emits $intensity_CO₂ tCO``_2``. Firm ``A`` faces a production cost of ``0.2Q+Q^{\frac{1}{2}}`` and an abatement cost of ``730 \times a^{\frac{1}{a}}`` and firm ``B`` faces the same production cost, but an abatement cost of ``500 \times a^{\frac{1}{3a}}``.
 
-Assuming that the permits are divided equally between the two firms and they are not allowed to trade, how much will each firm emit? How about if they can freely trade with no frictions? If each permit counts for 0.1 tCO``_2``, what will be the equilibrium price of the permits?
+Assuming that the permits are divided equally between the two firms, and they are not allowed to trade, how much will each firm emit? How about if they can freely trade with no frictions? If each permit counts for 0.1 tCO``_2``, what will be the equilibrium price of the permits?
 """
 
 # ╔═╡ a3563b82-3e2b-4688-971c-f2d70a8b0df1
@@ -353,7 +353,7 @@ end
 
 # ╔═╡ 18d25862-fe6e-4d99-9f9e-daa3ab36a0a0
 md"""
-This approach is good for getting a ball-park figure and getting values for non-continuous functions, however, solution time quickly increases if you want to get a more accurate estimate. In this case as we are only working in a continuous space, we can simply set up an optimisation problem using JuMP.jl and analytically solve it using forward differentation.
+This approach is good for getting a ball-park figure and getting values for non-continuous functions, however, solution time quickly increases if you want to get a more accurate estimate. In this case as we are only working in a continuous space, we can simply set up an optimisation problem using JuMP.jl and analytically solve it using forward differentiation.
 """
 
 # ╔═╡ a21e0d60-0135-4b42-aa3e-adc348f96401
@@ -388,7 +388,7 @@ end
 md"""
 Notice the significant increase in accuracy we get from using JuMP for solving the optimisation problem. Additionally, the solution time is generally much lower compared to the grid-search approach.
 
-Below is a visualisation of the results, where the abatement efforts of firm 1 and firm 2 are shown on the X and Y axes respectively, with the Z axis representing the total abatement cost. The white "**X**" marker indicates the optimal combination of abatement efforts to minimse the cost.
+Below is a visualisation of the results, where the abatement efforts of firm 1 and firm 2 are shown on the X and Y axes respectively, with the Z axis representing the total abatement cost. The white "**X**" marker indicates the optimal combination of abatement efforts to minimise the cost.
 """
 
 # ╔═╡ ec704946-35ca-4b6b-91fc-05223fa64756
@@ -451,7 +451,7 @@ begin
 	#Part 1.b
 	percent_discount_rate = discount_rate*100
 	change_NPV_2035 = gradual_NPV_2035 - sudden_NPV_2035
-	change_NPV_perpituity = gradual_NPV_perpituity - sudden_NPV_perpituity
+	change_NPV_perpetuity = gradual_NPV_perpetuity - sudden_NPV_perpetuity
 
 	#Part 1.c
 	permit_limit = round(0.70*2Q*intensity_CO₂, digits=1)
@@ -464,7 +464,7 @@ end;
 # ╔═╡ 586da741-9a05-4192-b491-22bdc84c35cc
 md"""
 ###### 1.b -- Net Present Value (NPV)
-Assuming that we are currently in 2022, the first carbon tax of € $tax_CO₂_2025 will come in place in three years. The government has also announced that in 2035, it will increase the tax to € $tax_CO₂_2035 at which point this increased rate will stay in place for perpituity.
+Assuming that we are currently in 2022, the first carbon tax of € $tax_CO₂_2025 will come in place in three years. The government has also announced that in 2035, it will increase the tax to € $tax_CO₂_2035 at which point this increased rate will stay in place for perpetuity.
 
 What would be today's net present value of the firm's costs assuming an annual discount rate of $percent_discount_rate%? How would your answer change if the government decided to instead apply a constant growth rate between 2025 and 2035?
 """
@@ -501,11 +501,11 @@ begin
 	rounded_total_cost = round(total_cost, digits=2)
 	rounded_NPV_2025 = round(NPV_2025,digits=2)
 	rounded_sudden_NPV_2035 = Int(round(sudden_NPV_2035))
-	rounded_sudden_NPV_perpituity = Int(round(sudden_NPV_perpituity))
+	rounded_sudden_NPV_perpetuity = Int(round(sudden_NPV_perpetuity))
 	rounded_gradual_NPV_2035 = Int(round(gradual_NPV_2035))
-	rounded_gradual_NPV_perpituity = Int(round(gradual_NPV_perpituity))
+	rounded_gradual_NPV_perpetuity = Int(round(gradual_NPV_perpetuity))
 	rounded_change_NPV_2035 = Int(round(change_NPV_2035))
-	rounded_change_NPV_perpituity = Int(round(change_NPV_perpituity))
+	rounded_change_NPV_perpetuity = Int(round(change_NPV_perpetuity))
 	rounded_total_abatement_effort = round(total_abatement_effort,digits=2)
 	rounded_notrade_cost_A = round(notrade_cost_A,digits=2)
 	rounded_notrade_cost_B = round(notrade_cost_B,digits=2)
@@ -533,14 +533,14 @@ Where ``R_t`` is the net cash flows during period ``t``, ``i`` is the discount r
 
 # ╔═╡ 1352c82d-688d-4684-93da-58952e32cdc9
 md"""
-The cumulative costs the firm will face by 2035 in NPV will be € $rounded_sudden_NPV_2035, and € $rounded_sudden_NPV_perpituity over the infinite horizon.
+The cumulative costs the firm will face by 2035 in NPV will be € $rounded_sudden_NPV_2035, and € $rounded_sudden_NPV_perpetuity over the infinite horizon.
 
 If the tax rate grows at a constant rate between 2025 and 2035, the NPV of the costs will be higher both by 2035 and over the infinite horizon due to higher costs being realised between 2026 and 2034. Using the same approach as before, we can loop through the years in order to calculate the net present value of the total cost to the firm.
 """
 
 # ╔═╡ 8b83e0d6-d595-453d-af72-4f8a3872c985
 md"""
-In this case, the cumulative costs the firm will face by 2035 in NPV will be € $rounded_gradual_NPV_2035, and € $rounded_gradual_NPV_perpituity over the infinite horizon -- € $rounded_change_NPV_2035 and € $rounded_change_NPV_perpituity higher respectively.
+In this case, the cumulative costs the firm will face by 2035 in NPV will be € $rounded_gradual_NPV_2035, and € $rounded_gradual_NPV_perpetuity over the infinite horizon -- € $rounded_change_NPV_2035 and € $rounded_change_NPV_perpetuity higher respectively.
 """
 
 # ╔═╡ 1fc88790-cca9-4a9d-881d-dfd01f070b36
@@ -555,7 +555,7 @@ So, we know that total emissions need to be reduced by $rounded_total_abatement_
 
 # ╔═╡ 1e5fc4bb-1e6b-43c2-bbcc-e09639285263
 md"""
-In this case, firm A faces a total abatement cost of € $rounded_notrade_cost_A, while firm B faces a cost of € $rounded_notrade_cost_B, resulting in a total cost of both firms of € $rounded_total_notrade_cost. If we now allow firms to trade freely we can do much better. Firms will trade to the point where their marginal abatement costs equalise. This is because that is the point where both will face the same cost of abating one additional unit and no further surplus can be gained from trading. This is the same as saying that we want to minimse the total abatement costs, where we allow each firm to freely choose their abatement level, as long as the sum of abatement efforts equal 2 ``\times`` $rounded_total_abatement_effort .
+In this case, firm A faces a total abatement cost of € $rounded_notrade_cost_A, while firm B faces a cost of € $rounded_notrade_cost_B, resulting in a total cost of both firms of € $rounded_total_notrade_cost. If we now allow firms to trade freely we can do much better. Firms will trade to the point where their marginal abatement costs equalise. This is because that is the point where both will face the same cost of abating one additional unit and no further surplus can be gained from trading. This is the same as saying that we want to minimise the total abatement costs, where we allow each firm to freely choose their abatement level, as long as the sum of abatement efforts equal 2 ``\times`` $rounded_total_abatement_effort .
 """
 
 # ╔═╡ fc1da9cd-e480-4a60-a7ad-3eb1097d1311
@@ -609,7 +609,7 @@ Since each firm emits $rounded_firm_emission tCO``_2`` and each firm permit coun
 # ╟─72160409-650c-42f5-8fa2-eac2d7df6a2c
 # ╟─0b30a4d0-6d01-4d6f-8f61-d81fec56a0f8
 # ╟─5062ea43-0509-4385-abdb-6b83e7535c06
-# ╠═3e380002-2987-44f7-a318-b54adaf9ad69
+# ╟─3e380002-2987-44f7-a318-b54adaf9ad69
 # ╟─a3563b82-3e2b-4688-971c-f2d70a8b0df1
 # ╠═5eb7d942-e523-4c09-b011-6b75f2ac1185
 # ╟─1fc88790-cca9-4a9d-881d-dfd01f070b36
