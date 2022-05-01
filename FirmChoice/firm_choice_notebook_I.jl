@@ -25,9 +25,7 @@ md"""
 
 ## Introduction
 
-This notebook is the first in a series of notebooks laying out the basics of how to solve an economic optimsation problem in Julia. In particular, this notebook covers a single optimisation problem relating to the firm's choice, and is similar to something which you may find in undergraduate or postgraduate problem sets.
-
-One key difference is that some of the problems may be time-consuming to solve by hand.
+This notebook is the first in a series of notebooks laying out the basics of how to solve an economic optimsation problem in Julia. In particular, this notebook covers a single optimisation problem relating to a firm's choice of cutting down on their CO``_2`` emissions. The question is designed to be similar to something which you may find in undergraduate or postgraduate economics problem sets with the caveat that solving them by hand may be quite time-consuming.
 """
 
 # ╔═╡ 18320bda-9c06-4788-85e8-08f97fd620db
@@ -42,7 +40,8 @@ md"""
 """
 
 # ╔═╡ 288b9f53-7184-4d51-a9b7-1990d7b359ad
-md"""###### Problemset parameters"""
+md"""###### Problemset parameters
+*These parameters are global and can impact the results of all three parts of the question*"""
 
 # ╔═╡ ec0280b8-2dd5-4e09-9cf4-1614684f2111
 begin
@@ -76,7 +75,7 @@ md"""
 
 Intuitively, the firm wants to minimise its total costs with respect to its abatement decision ``a``. Mathematically, this would be equal to setting ``\frac{\partial a}{\partial f_{TC}} = 0``.
 
-To solve this in Julia using **JuMP.jl** , we can simply set up our objective function and specify the constraints and JuMP will do the rest.
+Our first course of action should be to write out the functions stated in the problem and formulate our objective function which we want to minimise. Once we have specified what the objective function is, we can use **JuMP.jl** (Julia for Mathematical Programming) to solve the constrained optimisation problem.
 """
 
 # ╔═╡ c6129e50-56cd-4e7d-942d-98239c1b3603
@@ -95,7 +94,7 @@ end;
 
 # ╔═╡ 2fdb2ab4-cda9-4997-93ab-7782c4e7e4f1
 md"""
-Once we have specified our functions, we pass it through to one of the solvers, **Ipopt.jl** in this case. 
+Once we have specified our functions, we pass it through to one of the solvers, **Ipopt.jl** in this case. Ipopt usually works for most optimisation problems in Economics, however, a full list of solvers can be found in the appendix.
 """
 
 # ╔═╡ 27e4830e-b0a6-4df9-9f33-177f238d4a83
@@ -110,7 +109,7 @@ begin
 	#Specify the variables of interest & their constraints
 	@variable(model, 0 <= aₘ <= 1)
 
-	#Specify the objective which we want to minimise
+	#Specify the objective(non-linear) which we want to minimise
 	@NLobjective(model, Min, f_obj(aₘ))
 
 	#Optimise the model
@@ -122,12 +121,12 @@ end;
 
 # ╔═╡ 276bfd3c-6406-49e9-b270-5e6ae286221c
 md"""
-After the model is finished solving, we can simply access the optimised value, `a_optim`, from the model.
+After the model is finished solving, we can extract the optimal abatement level, `a_optim`, from the model.
 """
 
 # ╔═╡ 9555c941-ed7d-4eb6-bdd8-0e62fa95f3c3
 md"""
-We can easily visualise the results for inspection. Note that the starting point can have an impact on the results of the objective have multiple minima, however, for most simple economics problem sets, this is not a major concern. 
+We can easily visualise the results for inspection, just to make sure that the optimisation is working as it should.
 """
 
 # ╔═╡ 9e867ead-3a11-4216-9e6b-7f9d077d9503
@@ -164,7 +163,7 @@ end;
 
 # ╔═╡ e22ca996-8c8c-4e69-a28d-c4aa1ff33ef2
 md"""
-For future reference to total cost calculations, we will use the following function for calculating total costs.
+For future reference to total cost calculations, we will use the following function for calculating total costs:
 """
 
 # ╔═╡ ef880d51-3456-4dbc-b0d2-bcc4a0a5a14d
@@ -318,7 +317,7 @@ end;
 
 # ╔═╡ fd1a2e5c-ecd3-4bdd-ba5e-07198aeeac4c
 md"""
-However, in this instance, the two firms do not face the same abatement cost function. At low lower levels of abatement, Firm B faces a much higher abatement cost than firm A, consequently, under equal allocation with no trading, Firm B is overburdened. This can be seen when comparing the cost faced by the two firms.
+However, in this instance, the two firms do not face the same abatement cost function. At lower levels of abatement, Firm B faces a much higher abatement cost than firm A, consequently, under equal allocation with no trading, Firm B is overburdened. This can be seen when comparing the cost faced by the two firms.
 """
 
 # ╔═╡ ccefe417-cfb3-4a49-94d6-64e29c6fd5ca
@@ -353,7 +352,7 @@ end
 
 # ╔═╡ 18d25862-fe6e-4d99-9f9e-daa3ab36a0a0
 md"""
-This approach is good for getting a ball-park figure and getting values for non-continuous functions, however, solution time quickly increases if you want to get a more accurate estimate. In this case as we are only working in a continuous space, we can simply set up an optimisation problem using JuMP.jl and analytically solve it using forward differentiation.
+This approach is good for getting a ball-park figure and getting values for non-continuous functions, however, solution time quickly increases if you want to get a more accurate estimate. In this case, as we are only working in a continuous space, we can simply set up an optimisation problem using JuMP.jl and analytically solve it using forward differentiation.
 """
 
 # ╔═╡ a21e0d60-0135-4b42-aa3e-adc348f96401
@@ -418,7 +417,7 @@ end
 
 # ╔═╡ 0854f965-e4ee-4b6e-8fa3-1d931c397048
 md"""
-We can see that the marginal abatement cost faced by the two firms is pretty close to the same.
+Voila! We can see that the marginal abatement cost faced by the two firms are almost identical.
 """
 
 # ╔═╡ 981a433d-83a1-4aaf-b0ef-e60e56fdc4a1
@@ -464,9 +463,9 @@ end;
 # ╔═╡ 586da741-9a05-4192-b491-22bdc84c35cc
 md"""
 ###### 1.b -- Net Present Value (NPV)
-Assuming that we are currently in 2022, the first carbon tax of € $tax_CO₂_2025 will come in place in three years. The government has also announced that in 2035, it will increase the tax to € $tax_CO₂_2035 at which point this increased rate will stay in place for perpetuity.
+Assuming that we are currently in 2022, the first carbon tax of € $tax_CO₂_2025 per tCO``_2`` will come in place in three years. The government has also announced that in 2035, it will increase the tax to € $tax_CO₂_2035 per tCO``_2`` at which point this increased rate will stay in place for perpetuity.
 
-What would be today's net present value of the firm's costs assuming an annual discount rate of $percent_discount_rate%? How would your answer change if the government decided to instead apply a constant growth rate between 2025 and 2035?
+What would be today's net present value of the firm's costs assuming an annual discount rate of $percent_discount_rate%? How would your answer change if the government decided to instead apply a constant annual growth rate on the tax from 2025 to 2035, reaching the target rate of € $tax_CO₂_2035 in 2035?
 """
 
 # ╔═╡ 2212cbe6-d2a2-4431-8f48-6aa21714f977
@@ -489,6 +488,7 @@ begin
 	plot([(a, f_abate_A(a)) for a in 0:0.001:1], label="Firm A", lw=3)
 	plot!([(a, f_abate_B(a)) for a in 0:0.001:1], label="Firm B", lw=3)
 	vline!([total_abatement_effort], label=false, line=(2,:dot,:gray))
+	plot!(ylab="Abatement Cost", xlab="Abatement effort (a)", legend=false)
 end
 
 # ╔═╡ 2275fa44-5c58-40ad-8be5-aa3a2fb563db
@@ -524,7 +524,7 @@ From the above analysis, we can see that the optimal abatement rate for the firm
 md"""
 ###### Answer
 
-The NPV is a method for determining the current value of all future cash flows. Naturally, we would care more about the present, and discount future events to account for opportunity costs. The NPV of a future cost at time ``t`` can be calculated according to:
+The NPV is a method for determining the current value of all future cash flows. Naturally, we would care more about the present and discount future events to account for opportunity costs. The NPV of a future cost at time ``t`` can be calculated according to:
 
 $NPV = \sum_{t=1}^{n}\frac{R_t}{(1+i)^t}$
 
@@ -545,22 +545,24 @@ In this case, the cumulative costs the firm will face by 2035 in NPV will be €
 
 # ╔═╡ 1fc88790-cca9-4a9d-881d-dfd01f070b36
 md"""
-In the first instance, where both firms are not allowed to trade and each firm is handed an equal amount of permits, we simply need to plug the level of abatement, ``a \in [0,1]``, into the respective functions. The total level of abatement, ``a``, required will be ``1 - \frac{2.8}{TotalCO_2}``, or $rounded_total_abatement_effort for each firm.
+In the first instance, where the firms are not allowed to trade and are handed the same amount of permits, we simply need to plug the level of abatement, ``a \in [0,1]``, into the respective abatement cost functions. The total level of abatement, ``a``, required will be ``1 - \frac{2.8}{TotalCO_2}``, or $rounded_total_abatement_effort for each firm.
 """
 
 # ╔═╡ dca6f88e-061e-46c0-be6c-69acbeb5219a
 md"""
-So, we know that total emissions need to be reduced by $rounded_total_abatement_effort, and if both firm A and firm B are allocated the same amount of permits, each one will need to abate the same quantity of CO``_2`` as they are faced with the same production cost function.
+We know that total emissions need to be reduced by $rounded_total_abatement_effort, and if both firm A and firm B are allocated the same amount of permits, each one will need to abate the same quantity of CO``_2`` as they are faced with the same production cost function.
 """
 
 # ╔═╡ 1e5fc4bb-1e6b-43c2-bbcc-e09639285263
 md"""
-In this case, firm A faces a total abatement cost of € $rounded_notrade_cost_A, while firm B faces a cost of € $rounded_notrade_cost_B, resulting in a total cost of both firms of € $rounded_total_notrade_cost. If we now allow firms to trade freely we can do much better. Firms will trade to the point where their marginal abatement costs equalise. This is because that is the point where both will face the same cost of abating one additional unit and no further surplus can be gained from trading. This is the same as saying that we want to minimise the total abatement costs, where we allow each firm to freely choose their abatement level, as long as the sum of abatement efforts equal 2 ``\times`` $rounded_total_abatement_effort .
+In this case, firm A faces a total abatement cost of € $rounded_notrade_cost_A, while firm B faces a cost of € $rounded_notrade_cost_B, resulting in a total cost of both firms of € $rounded_total_notrade_cost.
+
+If we now allow firms to trade freely we can do much better. Firms will trade to the point where their marginal abatement costs equalise. This is because that is the point where both will face the same cost of abating one additional unit and no further surplus can be gained from trading. This is essentially the same as saying that we want to minimise the total abatement costs, where we allow each firm to freely choose their abatement level, as long as the sum of abatement efforts equal 2 ``\times`` $rounded_total_abatement_effort .
 """
 
 # ╔═╡ fc1da9cd-e480-4a60-a7ad-3eb1097d1311
 md"""
-Finally, the last question asks for the equilibrium price of permits. Assuming that there are no costs associated with trading, at the optimal abatement, neither firm will have an incentive to trade. If the permit price was any higher than their marginal abatement cost, they simply wouldn't buy the permits, and as soon as the permit price drops below the marginal abatement cost, the firm would buy permits to avoid paying the abatement cost.
+Finally, the last part of the question asks for the equilibrium price of permits. Assuming that there are no costs associated with trading, at the optimal abatement, neither firm will have an incentive to trade. If the permit price is higher than their marginal abatement cost, the firm simply wouldn't buy the permits, and as soon as the permit price drops below the marginal abatement cost, the firm would buy permits to avoid paying the abatement cost.
 
 Since each firm emits $rounded_firm_emission tCO``_2`` and each firm permit counts for 0.1 tCO``_2``, a permit accounts for an abatement effort, ``a``, of $rounded_permit_abatement_share . Consequently, to get the cost per permit, we multiply the marginal abatement cost with the relative abatement effort of one permit. Solving for the permit price we get the equilibrium price of € $rounded_equilibrium_permit_price .
 """
@@ -571,6 +573,12 @@ md"""##### Useful resources"""
 # ╔═╡ ba71c821-b272-4962-9d61-f6564cc4576b
 md"""
 [Julia for economists -- Automatic differentiation and optimization](https://www.youtube.com/watch?v=B5O3xBolDCc&t=0s)
+
+[JuMP.jl solvers](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers)
+
+\
+
+*Lastly, if you have any questions, spot any mistakes, please feel free to [reach out](https://www.fhbarton.com/)!*
 """
 
 # ╔═╡ Cell order:
